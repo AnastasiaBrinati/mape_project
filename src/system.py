@@ -74,6 +74,8 @@ events = {                              # dictionary of lists of events         
     "execute": []
 }
 
+# QUA SERVIRANNO 3 streams diversi si ok
+
 events[0].t = ssq.GetArrival()              # first event is of course an arrival   */
 events[0].x = ON                        # schedule the first arrival            */
 
@@ -86,18 +88,18 @@ events[4].x = ON                        # schedule the first arrival            
 while (events[0].x != 0) or (events[2].x != 0) or (events[3].x != 0) or (number != 0):
 
     e = event.NextEvent(events)                     # next event        */
-    t.next = e.t                                    # next event time   */
-    area     += (t.next - t.current) * number       # update integral   */
+    t.next = events[e].t                            # next event time   */
+    #       area     += (t.next - t.current) * number       # update integral   */
     t.current = t.next                              # advance the clock */
 
-
-    if number > 0:                          # update integrals    */
-        area.node += (t.next - t.current) * number
-        area.queue += (t.next - t.current) * (number - 1)
-        area.service += (t.next - t.current)
+    #if number > 0:                          # update integrals    */
+    #    area.node += (t.next - t.current) * number
+    #    area.queue += (t.next - t.current) * (number - 1)
+    #    area.service += (t.next - t.current)
     # EndIf
 
-    t.current = t.next                       # advance the clock  */
+    if e == 0:
+
 
     if t.current == t.arrival:               # process an arrival */
         number += 1
