@@ -19,21 +19,21 @@
 from utils.rngs import selectStream, plantSeeds
 from utils.rvgs import Exponential, Erlang
 
-START =        0.0              # initial time                   */
-STOP  =    20000.0              # terminal (close the door) time */
-INFINITY =  (100.0 * STOP)      # must be much larger than STOP  */
+START = 0.0  # initial time                   */
+STOP = 20000.0  # terminal (close the door) time */
+INFINITY = (100.0 * STOP)  # must be much larger than STOP  */
 arrivalTemp = START
 
 
-def Min(a,c):
+def Min(a, c):
     # ------------------------------
     # * return the smaller of a, b
     # * ------------------------------
     # */
-    if (a < c):
-        return (a)
+    if a < c:
+        return a
     else:
-        return (c)
+        return c
 
 
 def GetArrival():
@@ -45,8 +45,7 @@ def GetArrival():
 
     selectStream(0)
     arrivalTemp += Exponential(2.0)
-    return (arrivalTemp)
-
+    return arrivalTemp
 
 
 def GetService():
@@ -55,63 +54,66 @@ def GetService():
     # * --------------------------------------------
     # */
     selectStream(1)
-    return (Erlang(5,0.3))
+    return Erlang(5, 0.3)
+
 
 class track:
-    node = 0.0                   # time integrated number in the node  */
-    queue = 0.0                  # time integrated number in the queue */
-    service = 0.0                # time integrated number in service   */
+    node = 0.0  # time integrated number in the node  */
+    queue = 0.0  # time integrated number in the queue */
+    service = 0.0  # time integrated number in service   */
+
 
 class time:
-    arrival = -1                # next arrival time                   */
-    completion = -1             # next completion time                */
-    current  = -1               # current time                        */
-    next = -1                   # next (most imminent) event time     */
-    last = -1                   # last arrival time                   */
+    arrival = -1  # next arrival time                   */
+    completion = -1  # next completion time                */
+    current = -1  # current time                        */
+    next = -1  # next (most imminent) event time     */
+    last = -1  # last arrival time                   */
+
 
 ###############################Main Program##############################
 
 
-index  = 0                  # used to count departed jobs         */
-number = 0                  # number in the node                  */
+index = 0  # used to count departed jobs         */
+number = 0  # number in the node                  */
 area = track()
 t = time()
 
 plantSeeds(123456789)
 
-t.current    = START           # set the clock                         */
-t.arrival    = GetArrival()    # schedule the first arrival            */
-t.completion = INFINITY        # the first event can't be a completion */
+t.current = START  # set the clock                         */
+t.arrival = GetArrival()  # schedule the first arrival            */
+t.completion = INFINITY  # the first event can't be a completion */
 
 while (t.arrival < STOP) or (number > 0):
-    t.next          = Min(t.arrival, t.completion)  # next event time   */
-    if (number > 0):                               # update integrals  */
-        area.node    += (t.next - t.current) * number
-        area.queue   += (t.next - t.current) * (number - 1)
+    t.next = Min(t.arrival, t.completion)  # next event time   */
+    if number > 0:  # update integrals  */
+        area.node += (t.next - t.current) * number
+        area.queue += (t.next - t.current) * (number - 1)
         area.service += (t.next - t.current)
-    #EndIf
+    # EndIf
 
-    t.current       = t.next                    # advance the clock */
+    t.current = t.next  # advance the clock */
 
-    if (t.current == t.arrival):               # process an arrival */
+    if t.current == t.arrival:  # process an arrival */
         number += 1
-        t.arrival     = GetArrival()
-        if (t.arrival > STOP):
-            t.last      = t.current
-            t.arrival   = INFINITY
+        t.arrival = GetArrival()
+        if t.arrival > STOP:
+            t.last = t.current
+            t.arrival = INFINITY
 
-        if (number == 1):
+        if number == 1:
             t.completion = t.current + GetService()
-    #EndOuterIf
-    else:                                        # process a completion */
+    # EndOuterIf
+    else:  # process a completion */
         index += 1
         number -= 1
-        if (number > 0):
+        if number > 0:
             t.completion = t.current + GetService()
         else:
             t.completion = INFINITY
 
-#EndWhile
+# EndWhile
 
 print("\nfor {0} jobs".format(index))
 print("   average interarrival time = {0:6.2f}".format(t.last / index))
