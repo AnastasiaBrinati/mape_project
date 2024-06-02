@@ -17,6 +17,7 @@ MONITORING_SERVERS = 3
 ssqs = []
 monitoring_events = []
 for i in range(MONITORING_SERVERS):
+
     # creates the ssqs for the monitoring areas
     q = ssq.SSQ()
     ssqs.append(q)
@@ -40,6 +41,8 @@ for i in range(MONITORING_SERVERS):
 ANALYZE_PLANNING_SERVERS = 3
 msq = msq.MSQ()
 # ANALYZE_PLANNING_SERVERS + 1 because first event is the arrivals
+
+# TO-DO
 analyze_plan_events = [event.Event() for i in range(ANALYZE_PLANNING_SERVERS+1)]
 
 # da 1 in poi perchè il primo evento è l'arrivo e coinciderà con una departure dalla prima area
@@ -57,8 +60,8 @@ for s in range(1, ANALYZE_PLANNING_SERVERS+1):
 # ****************************** System *******************************
 
 # SYSTEM VALUES
-index = 0   # used to count departed jobs          */
-number = 0  # number in the system                 */
+departed_jobs = 0                       # used to count departed jobs          */
+number = 0                              # number in the system                 */
 
 # ****************************** Simulation *******************************
 # initial seed
@@ -70,7 +73,7 @@ t.completion = INFINITY                 # the first event can't be a completion 
 
 events = {                              # dictionary of lists of events         */
     "monitor": monitoring_events,
-    "analyze&plan": [],
+    "analyze&plan": analyze_plan_events,
     "execute": []
 }
 
@@ -85,7 +88,7 @@ events[2].x = ON                        # schedule the first arrival            
 events[4].t = ssq.GetArrival()              # first event is of course an arrival   */
 events[4].x = ON                        # schedule the first arrival            */
 
-while (events[0].x != 0) or (events[2].x != 0) or (events[3].x != 0) or (number != 0):
+while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number != 0):
 
     e = event.NextEvent(events)                     # next event        */
     t.next = events[e].t                            # next event time   */
@@ -98,26 +101,35 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[3].x != 0) or (number 
     #    area.service += (t.next - t.current)
     # EndIf
 
-    if e == 0:
+    if e == 0 or e == 2 or e == 4:              # process an arrival to server 1 Monitor */
+        number += 1                             # plus one job in the system             */
+        ssqs[int(e/2)].number += 1              # plus one job in on of the ssq          */
+        # prepares next arrival
+        events[e].t = GetArrival()
+        # checks if it's the last arrival
+        if events[e].t > STOP:
+            events[e].x = 0
 
+        if ssqs[e].number <= SERVERS:
+            service  = GetService()
+            s = FindOne(events)
+            sum[s].service += service
+            sum[s].served += 1
+            events[s].t = t.current + service
+            events[s].x = 1
 
-    if t.current == t.arrival:               # process an arrival */
-        number += 1
-        t.arrival = GetArrival()
-        if t.arrival > STOP:
-            t.last = t.current
-            t.arrival = INFINITY
-
-        if number == 1:
-            t.completion = t.current + GetService()
-    # EndOuterIf
-    else:  # process a completion */
-        index += 1
+    #EndIf
+    else:                                        # process a departure */
+        departed_jobs += 1                                     # from server s       */
         number -= 1
-        if number > 0:
-            t.completion = t.current + GetService()
+        s = e
+        if number >= SERVERS:
+            service = GetService()
+            sum[s].service += service
+            sum[s].served += 1
+            events[s].t = t.current + service
         else:
-            t.completion = INFINITY
+            events[s].x = 0
 
 # EndWhile
 

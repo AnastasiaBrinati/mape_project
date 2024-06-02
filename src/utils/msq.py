@@ -154,12 +154,12 @@ for s in range(1, SERVERS+1):
 
 
 while (events[0].x != 0) or (number != 0):
-    e         = NextEvent(events)                  # next event index */
-    t.next    = events[e].t                        # next event time  */
-    area     += (t.next - t.current) * number     # update integral  */
-    t.current = t.next                            # advance the clock*/
+    e         = NextEvent(events)                  # next event index   */
+    t.next    = events[e].t                        # next event time    */
+    area     += (t.next - t.current) * number      # update integral    */
+    t.current = t.next                             # advance the clock  */
 
-    if e == 0:                                  # process an arrival*/
+    if e == 0:                                     # process an arrival */
         number += 1
         events[0].t = GetArrival()
         if events[0].t > STOP:
