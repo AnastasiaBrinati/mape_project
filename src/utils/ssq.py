@@ -15,9 +15,8 @@
 #  # Latest Revision : 3/26/14
 # * -------------------------------------------------------------------------
 # */
-
-from utils.rngs import selectStream, plantSeeds
-from utils.rvgs import Exponential, Erlang
+from src.libs import rngs as rngs
+from src.libs import rvgs as rvgs
 
 START = 0.0  # initial time                   */
 STOP = 20000.0  # terminal (close the door) time */
@@ -37,65 +36,71 @@ def Min(a, c):
 
 
 def GetArrival():
-    # ---------------------------------------------
+    # ----------------------------------------------
     # * generate the next arrival time, with rate 1/2
-    # * ---------------------------------------------
+    # * --------------------------------------------
     # */
     global arrivalTemp
 
-    selectStream(0)
-    arrivalTemp += Exponential(2.0)
+    rngs.selectStream(0)
+    arrivalTemp += rvgs.Exponential(2.0)
     return arrivalTemp
 
 
 def GetService():
-    # --------------------------------------------
+    # ---------------------------------------------
     # * generate the next service time with rate 2/3
     # * --------------------------------------------
     # */
-    selectStream(1)
-    return Erlang(5, 0.3)
+    rngs.selectStream(1)
+    return rvgs.Erlang(5, 0.3)
 
 
-class track:
-    node = 0.0  # time integrated number in the node  */
-    queue = 0.0  # time integrated number in the queue */
-    service = 0.0  # time integrated number in service   */
+class Track:
+    node = 0.0  # time integrated number in the node    */
+    queue = 0.0  # time integrated number in the queue  */
+    service = 0.0  # time integrated number in service  */
 
 
 class time:
-    arrival = -1  # next arrival time                   */
+    arrival = -1     # next arrival time                   */
     completion = -1  # next completion time                */
-    current = -1  # current time                        */
-    next = -1  # next (most imminent) event time     */
-    last = -1  # last arrival time                   */
+    current = -1     # current time                        */
+    next = -1        # next (most imminent) event time     */
+    last = -1        # last arrival time                   */
 
+
+class SSQ:
+    number = 0.0    # time integrated number in the node    */
+    queue = 0.0     # time integrated number in the queue   */
+    service = 0.0   # time integrated number in service     */
+    departed = 0    # number served                         */
 
 ###############################Main Program##############################
 
 
-index = 0  # used to count departed jobs         */
+index = 0   # used to count departed jobs         */
 number = 0  # number in the node                  */
-area = track()
+area = Track()
 t = time()
 
-plantSeeds(123456789)
+rngs.plantSeeds(123456789)
 
-t.current = START  # set the clock                         */
-t.arrival = GetArrival()  # schedule the first arrival            */
-t.completion = INFINITY  # the first event can't be a completion */
+t.current = START  # set the clock                                  */
+t.arrival = GetArrival()  # schedule the first arrival              */
+t.completion = INFINITY  # the first event can't be a completion    */
 
 while (t.arrival < STOP) or (number > 0):
-    t.next = Min(t.arrival, t.completion)  # next event time   */
-    if number > 0:  # update integrals  */
+    t.next = Min(t.arrival, t.completion)  # next event time        */
+    if number > 0:                         # update integrals       */
         area.node += (t.next - t.current) * number
         area.queue += (t.next - t.current) * (number - 1)
         area.service += (t.next - t.current)
     # EndIf
 
-    t.current = t.next  # advance the clock */
+    t.current = t.next                      # advance the clock     */
 
-    if t.current == t.arrival:  # process an arrival */
+    if t.current == t.arrival:              # process an arrival    */
         number += 1
         t.arrival = GetArrival()
         if t.arrival > STOP:

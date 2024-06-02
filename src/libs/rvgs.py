@@ -36,8 +36,9 @@
 #
 #--------------------------------------------------------------------------
 
-from rngs import random
 from math import log,sqrt,exp
+from src.libs import rngs
+
 
 def Bernoulli(p):
     #========================================================
@@ -45,10 +46,10 @@ def Bernoulli(p):
     #NOTE: use 0.0 < p < 1.0
     #========================================================
 
-    if (random() < 1 - p):
-        return(0)
+    if rngs.random() < 1 - p:
+        return 0
     else:
-        return(1)
+        return 1
 
 
 def Binomial(n,p):
@@ -61,14 +62,14 @@ def Binomial(n,p):
 
     for i in range(0,n):
         x += Bernoulli(p)
-    return (x)
+    return x
 
 def Equilikely(a,b):
     #===================================================================
     #Returns an equilikely distributed integer between a and b inclusive.
     #NOTE: use a < b
     #===================================================================
-    return (a + int((b - a + 1) * random()))
+    return a + int((b - a + 1) * rngs.random())
 
 def Geometric(p):
     #====================================================
@@ -77,7 +78,7 @@ def Geometric(p):
     #====================================================
     #
 
-    return (int(log(1.0 - random()) / log(p)))
+    return int(log(1.0 - rngs.random()) / log(p))
 
 
 def Pascal(n,p):
@@ -91,7 +92,7 @@ def Pascal(n,p):
 
     for i in range(0,n):
         x += Geometric(p)
-    return (x)
+    return x
 
 def Poisson(m):
     #==================================================
@@ -106,7 +107,7 @@ def Poisson(m):
         t += Exponential(1.0)
         x += 1
 
-    return (x - 1)
+    return x - 1
 
 def Uniform(a,b):
     #===========================================================
@@ -114,7 +115,7 @@ def Uniform(a,b):
     #NOTE: use a < b
     #===========================================================
     #
-    return (a + (b - a) * random())
+    return (a + (b - a) * rngs.random())
 
 def Exponential(m):
     #=========================================================
@@ -122,7 +123,7 @@ def Exponential(m):
     #NOTE: use m > 0.0
     #=========================================================
     #
-    return (-m * log(1.0 - random()))
+    return (-m * log(1.0 - rngs.random()))
 
 def Erlang(n,b):
     #==================================================
@@ -156,7 +157,7 @@ def Normal(m,s):
     p4 = 0.453642210148e-4
     q4 = 0.385607006340e-2
 
-    u = random()
+    u = rngs.random()
     if (u < 0.5):
         t = sqrt(-2.0 * log(u))
     else:
