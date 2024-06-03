@@ -125,11 +125,10 @@ class accumSum:
 
 
 class MSQ:
-    number = 0             # number in the node                 */
-    area = 0.0             # time integrated number in the node */
-    service = None         # service times                      */
+    number = 0             # time integrated number in the node   */
+    queue = 0.0            # time integrated number in the queue  */
+    service = 0.0          # service times                      */
     departed = 0           # number served                      */
-
 
 
 ########################### Main Program ##################################
