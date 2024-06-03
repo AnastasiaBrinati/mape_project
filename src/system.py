@@ -3,11 +3,11 @@ from src.libs import rngs
 from src.libs import rvgs
 from src.utils import event, clock, ssq, msq
 
-ON = 1                              # flag to signal active event                */
-OFF = 0                             # flag to signal inactive event              */
-START = 0.0                         # initial time                               */
-STOP = 20000.0                      # terminal time (close the door)             */
-INFINITY = (100.0 * STOP)           # must be much larger than STOP              */
+ON = 1                                  # flag to signal active event           */
+OFF = 0                                 # flag to signal inactive event         */
+START = 0.0                             # initial time                          */
+STOP = 20000.0                          # terminal time (close the door)        */
+INFINITY = (100.0 * STOP)               # must be much larger than STOP         */
 
 # ********************************** Monitoring area ******************************
 # */
@@ -25,12 +25,12 @@ monitoring_events = []
 # one arrival and one departure event for each ssq                              */
 for i in range(MONITORING_SERVERS):
 
-    a = event.Event()                 # arrival                                 */
+    a = event.Event()                   # arrival                               */
     a.t = START
     a.x = OFF
     monitoring_events.append(a)
 
-    d = event.Event()                 # departure                               */
+    d = event.Event()                   # departure                             */
     d.t = START
     d.x = OFF
     monitoring_events.append(d)
@@ -49,7 +49,7 @@ msq = msq.MSQ()
 # events initialization: from START with flag OFF                               */
 # one arrival event for the msq                                                 */
 analyze_plan_events = []
-a = event.Event()                     # arrival                                 */
+a = event.Event()                       # arrival                               */
 a.t = START
 a.x = OFF
 monitoring_events.append(a)
@@ -57,29 +57,29 @@ monitoring_events.append(a)
 # one departure event for each server of the msq                                */
 for i in range(1, ANALYZE_PLANNING_SERVERS+1):
 
-    d = event.Event()                # departure                                */
+    d = event.Event()                   # departure                             */
     d.t = START
     d.x = OFF
     monitoring_events.append(d)
 
 
-# ******************************** Execution area ******************************
+# ********************************* Execution area *******************************
 # */
-# ------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # *                          Initialize 1 Infinite Server
-# * ----------------------------------------------------------------------------
+# * ------------------------------------------------------------------------------
 # */
 
 # TO-DO
 
 
-# ************************************ System **********************************
+# ************************************* System ***********************************
 
 # SYSTEM VALUES
-number = 0                              # number in the system                */
-departed_jobs = 0                       # departed jobs from the system       */
+number = 0                              # number in the system                  */
+departed_jobs = 0                       # departed jobs from the system         */
 
-# ********************************* Simulation *********************************
+# *********************************** Simulation *********************************
 # plant initial seed
 rngs.plantSeeds(123456789)
 
@@ -102,11 +102,11 @@ events[4].x = ON                        # schedule the first arrival            
 
 while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number != 0):
 
-    # get the next event in the timeline
+    # get the next event in the timeline                                        */
 
-    e = event.NextEvent(events)                     # next event        */
-    t.next = events[e].t                            # next event time   */
-    t.current = t.next                              # advance the clock */
+    e = event.NextEvent(events)          # next event                           */
+    t.next = events[e].t                 # next event time                      */
+    t.current = t.next                   # advance the clock                    */
 
     #area     += (t.next - t.current) * number      # update integral   */
     #if number > 0:                                 # update integrals  */
