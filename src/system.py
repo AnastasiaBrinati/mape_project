@@ -71,11 +71,7 @@ t = clock.Time()
 t.current = START                       # set the clock                         */
 t.completion = INFINITY                 # the first event can't be a completion */
 
-events = {                              # dictionary of lists of events         */
-    "monitor": monitoring_events,
-    "analyze&plan": analyze_plan_events,
-    "execute": []
-}
+events = monitoring_events+analyze_plan_events+[]
 
 # QUA SERVIRANNO 3 streams diversi si ok
 
@@ -92,34 +88,57 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
 
     e = event.NextEvent(events)                     # next event        */
     t.next = events[e].t                            # next event time   */
-    #       area     += (t.next - t.current) * number       # update integral   */
     t.current = t.next                              # advance the clock */
 
-    #if number > 0:                          # update integrals    */
+    #area     += (t.next - t.current) * number      # update integral   */
+    #if number > 0:                                 # update integrals  */
     #    area.node += (t.next - t.current) * number
     #    area.queue += (t.next - t.current) * (number - 1)
     #    area.service += (t.next - t.current)
     # EndIf
 
-    if e == 0 or e == 2 or e == 4:              # process an arrival to server 1 Monitor */
-        number += 1                             # plus one job in the system             */
-        ssqs[int(e/2)].number += 1              # plus one job in on of the ssq          */
+    # ----------------------------------------------
+    # *           Monitoring Area Events
+    # * --------------------------------------------
+    # */
+    if e == 0 or e == 2 or e == 4:              # process an arrival to server   Monitor  */
+        number += 1                             # plus one job in the system              */
+        ssqs[e/2].number += 1                   # plus one job in one of the ssq          */
         # prepares next arrival
-        events[e].t = GetArrival()
+        events[e].t = ssq.GetArrival()
         # checks if it's the last arrival
         if events[e].t > STOP:
-            events[e].x = 0
+            events[e].x = OFF
 
-        if ssqs[e].number <= SERVERS:
-            service  = GetService()
-            s = FindOne(events)
-            sum[s].service += service
-            sum[s].served += 1
-            events[s].t = t.current + service
-            events[s].x = 1
+        if ssqs[e/2].number == 1:
+            # prepares next departure
+            events[e+1].t = t.current + ssq.GetService()
+            events[e+1].x = ON
 
-    #EndIf
-    else:                                        # process a departure */
+    if e == 1 or e == 3 or e == 5:              # process a departure from server Monitor */
+        departed_jobs += 1
+        ssqs[(e-1)/2].number -= 1               # minus one job in one of the ssq         */
+        # prepares next departure
+        if ssqs[(e-1)/2].number > 0:
+            events[e].t = t.current + ssq.GetService()
+        else:
+            events[e].x = OFF
+
+    # ----------------------------------------------
+    # *           Analyze&Plan Area Events
+    # * --------------------------------------------
+    # */
+
+    # TO-DO
+
+    # ----------------------------------------------
+    # *             Execute Area Events
+    # * --------------------------------------------
+    # */
+
+    # TO-DO
+
+    else:
         departed_jobs += 1                                     # from server s       */
         number -= 1
         s = e
@@ -142,14 +161,3 @@ print("   average # in the node ... = {0:6.2f}".format(area.node / t.current))
 print("   average # in the queue .. = {0:6.2f}".format(area.queue / t.current))
 print("   utilization ............. = {0:6.2f}".format(area.service / t.current))
 
-# C output:
-# Enter a positive integer seed (9 digits or less) >> 123456789
-
-# for 10025 jobs
-#    average interarrival time =   1.99
-#    average wait ............ =   4.11
-#    average delay ........... =   2.62
-#    average service time .... =   1.50
-#    average # in the node ... =   2.06
-#    average # in the queue .. =   1.31
-#    utilization ............. =   0.75
