@@ -24,10 +24,10 @@ for i in range(MONITORING_SERVERS):
 
     # prepares empty events for the monitoring area:
     # all starting at START with the flag off
-    e = event.Event()                       # arrival    */
-    e.t = START
-    e.x = OFF
-    monitoring_events.append(e)
+    a = event.Event()                       # arrival    */
+    a.t = START
+    a.x = OFF
+    monitoring_events.append(a)
 
     d = event.Event()                       # departure  */
     d.t = START
@@ -40,15 +40,21 @@ for i in range(MONITORING_SERVERS):
 
 ANALYZE_PLANNING_SERVERS = 3
 msq = msq.MSQ()
-# ANALYZE_PLANNING_SERVERS + 1 because first event is the arrivals
 
-# TO-DO
-analyze_plan_events = [event.Event() for i in range(ANALYZE_PLANNING_SERVERS+1)]
+analyze_plan_events = []
+a = event.Event()                           # arrival    */
+a.t = START
+a.x = OFF
+monitoring_events.append(a)
 
-# da 1 in poi perchè il primo evento è l'arrivo e coinciderà con una departure dalla prima area
+# (1, ANALYZE_PLANNING_SERVERS + 1) because first event is the arrival
 for s in range(1, ANALYZE_PLANNING_SERVERS+1):
-    analyze_plan_events[s].t = START          # this value is arbitrary because */
-    analyze_plan_events[s].x = OFF            # all servers are initially idle  */
+
+    d = event.Event()                       # departure  */
+    d.t = START
+    d.x = OFF
+    monitoring_events.append(d)
+
     sum[s].service = 0.0
     sum[s].served = 0
 
@@ -116,6 +122,11 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
             events[e+1].x = ON
 
     if e == 1 or e == 3 or e == 5:              # process a departure from server Monitor */
+
+        # signal arrival to AN&Plan area
+        events[6].x = ON
+        events[6].t = t.current
+
         departed_jobs += 1
         ssqs[(e-1)/2].number -= 1               # minus one job in one of the ssq         */
         # prepares next departure
@@ -128,6 +139,12 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
     # *           Analyze&Plan Area Events
     # * --------------------------------------------
     # */
+    # TO-DO
+
+    if e == 6:                                  # process an arrival to server   An&Pla   */
+        msq.number += 1                         # plus one job in one of the msq          */
+
+        # TO-DO: generate departure from the area
 
     # TO-DO
 
