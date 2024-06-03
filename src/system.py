@@ -119,23 +119,20 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
     # *                          Monitoring Area Events
     # * ---------------------------------------------------------------------------
     # */
-    if e == 0 or e == 2 or e == 4:              # process an arrival to server   Monitor  */
+    if e == 0 or e == 2 or e == 4:              # process an arrival in the Monitoring A  */
         number += 1                             # plus one job in the system              */
         ssqs[e/2].number += 1                   # plus one job in one of the ssq          */
-        # prepares next arrival
-        events[e].t = ssq.GetArrival()
-        # checks if it's the last arrival
-        if events[e].t > STOP:
-            events[e].x = OFF
 
-        if ssqs[e/2].number == 1:
-            # prepares next departure
+        events[e].t = ssq.GetArrival()          # prepares next arrival                   */
+        if events[e].t > STOP:                  # if the arrival is out of time:          */
+            events[e].x = OFF                   # turn off the arrivals                   */
+
+        if ssqs[e/2].number == 1:               # prepares next departure                 */
             events[e+1].t = t.current + ssq.GetService()
             events[e+1].x = ON
 
-    if e == 1 or e == 3 or e == 5:              # process a departure from server Monitor */
-
-        departed_jobs += 1
+    if e == 1 or e == 3 or e == 5:              # process a departure from the Monitoring */
+        ssqs[(e-1)/2].departed += 1             # plus one job departed from of the ssq   */
         ssqs[(e-1)/2].number -= 1               # minus one job in one of the ssq         */
 
         if ssqs[(e-1)/2].number > 0:            # prepares next departure                 */
@@ -143,13 +140,12 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
         else:
             events[e].x = OFF
 
-        # signal arrival to AN&Plan area                                                  */
-        events[6].x = ON
+        events[6].x = ON                        # signal an arrival in the An&Plan area   */
         events[6].t = t.current
 
-    # ----------------------------------------------
-    # *           Analyze&Plan Area Events
-    # * --------------------------------------------
+    # -----------------------------------------------------------------------------
+    # *                          Analyze&Plan Area Events
+    # * ---------------------------------------------------------------------------
     # */
     # TO-DO
 
