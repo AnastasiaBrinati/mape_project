@@ -157,19 +157,19 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
             events[e+s].x = ON
 
     if e == 7 and e == 8 and e == 9:
-        msq.departed += 1                       # plus one departure from the An Area  */
-        msq.number -= 1                         # minus one job in the msq             */
+        msq.departed += 1                       # plus one departure from the An Area   */
+        msq.number -= 1                         # minus one job in the msq              */
 
-        if msq.number >= msq.SERVERS:           # prepares next departure              */
+        if msq.number >= msq.SERVERS:           # prepares next departure               */
             events[e].t = t.current + msq.getService()
         else:
             events[e].x = OFF
 
-        events[10].x = ON                        # signal an arrival in the Exec area  */
+        events[10].x = ON                        # signal an arrival in the Exec area   */
         events[10].t = t.current
-    # * ---------------------------------------------------------------------------------
+    # * ----------------------------------------------------------------------------------
     # *                             Execute Area Events
-    # * ---------------------------------------------------------------------------------
+    # * ----------------------------------------------------------------------------------
     # */
 
     # TO-DO
