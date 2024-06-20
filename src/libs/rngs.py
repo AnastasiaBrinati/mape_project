@@ -153,7 +153,7 @@ def selectStream(index):
     global stream
 
     stream = index % STREAMS
-    if (initialized == 0) and (stream != 0):   #/* protect against        */
+    if (initialized == 0) and (stream != 0):    #/* protect against        */
         plantSeeds(DEFAULT)                     #/* un-initialized streams */
 
 

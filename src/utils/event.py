@@ -1,10 +1,12 @@
 import math
 
-class Event:
-    t = None                        # next event time               */
-    x = None                        # event status, 0 or 1          */
 
-def NextEvent(events):
+class Event:
+    t = None  # next event time               */
+    x = None  # event status, 0 or 1          */
+
+
+def next_event(events):
     # ---------------------------------------
     # * return the index of the next event type
     # * ---------------------------------------

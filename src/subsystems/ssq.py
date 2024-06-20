@@ -19,30 +19,27 @@ from src.libs import rngs as rngs
 from src.libs import rvgs as rvgs
 
 
-def get_arrival():
-    # ----------------------------------------------
-    # * generate the next arrival time, with rate 1/2
-    # * --------------------------------------------
-    # */
-    global arrivalTemp
-
-    rngs.selectStream(0)
-    arrivalTemp += rvgs.Exponential(2.0)
-    return arrivalTemp
-
-
-def get_service():
-    # ---------------------------------------------
-    # * generate the next service time with rate 2/3
-    # * --------------------------------------------
-    # */
-    rngs.selectStream(1)
-    return rvgs.Erlang(5, 0.3)
-
-
 class SSQ:
     number = 0.0    # time integrated number in the node    */
     queue = 0.0     # time integrated number in the queue   */
     service = 0.0   # time integrated number in service     */
     departed = 0    # number served                         */
 
+    def get_arrival(self) -> int:
+        # ----------------------------------------------
+        # * generate the next arrival time, with rate 1/2
+        # * --------------------------------------------
+        # */
+        global arrivalTemp
+
+        rngs.selectStream(0)
+        arrivalTemp += rvgs.Exponential(2.0)
+        return arrivalTemp
+
+    def get_service(self) -> int:
+        # ---------------------------------------------
+        # * generate the next service time with rate 2/3
+        # * --------------------------------------------
+        # */
+        rngs.selectStream(1)
+        return rvgs.Erlang(5, 0.3)

@@ -1,7 +1,9 @@
 
 from src.libs import rngs
-from src.libs import rvgs
-from src.utils import event, clock, ssq, msq
+from src.subsystems.monitoring import MonitoringCentre
+from src.subsystems.planning import PlanningCentre
+from src.utils import event, clock
+from src.subsystems import msq, ssq
 
 ON = 1                                          # flag to signal active event            */
 OFF = 0                                         # flag to signal inactive event          */
@@ -12,101 +14,56 @@ INFINITY = (100.0 * STOP)                       # must be much larger than STOP 
 # ************************************** Monitoring area **********************************
 # */
 # -----------------------------------------------------------------------------------------
-# *                  Initialize 3 SSQs for the Monitoring Area
+# *                        Initialize 3 SSQs for the Monitoring Area
 # * ---------------------------------------------------------------------------------------
 # */
 
 # sub-systems initialization: empty SSQs                                                 */
 MONITORING_SERVERS = 3
-ssqs = [ssq.SSQ() for i in range(MONITORING_SERVERS)]
+monitoringCentre = MonitoringCentre(MONITORING_SERVERS)
 
 # events initialization: from START with flag OFF                                        */
-monitoring_events = []
-# one arrival and one departure event for each ssq                                       */
-for i in range(MONITORING_SERVERS):
-
-    a = event.Event()                   # arrival                                        */
-    a.t = START
-    a.x = OFF
-    monitoring_events.append(a)
-
-    d = event.Event()                   # departure                                      */
-    d.t = START
-    d.x = OFF
-    monitoring_events.append(d)
+monitoring_events = monitoringCentre.get_events()
 
 # *********************************** Analyze&Plan area ***********************************
 # */
 # -----------------------------------------------------------------------------------------
-# *                  Initialize 1 MSQs with abstract priority classes
+# *                                  Initialize 1 SSQ
 # * ---------------------------------------------------------------------------------------
 # */
 
-# sub-systems initialization: empty MSQs                                                */
-ANALYZE_PLANNING_SERVERS = 3
-msq = msq.MSQ(ANALYZE_PLANNING_SERVERS)
+# sub-systems initialization: empty SSQ                                                  */
+planningCentre = PlanningCentre()
 
-# events initialization: from START with flag OFF                                       */
-# one arrival event for the msq                                                         */
-analyze_plan_events = []
-a = event.Event()                       # arrival                                       */
-a.t = START
-a.x = OFF
-monitoring_events.append(a)
-
-# one departure event for each server of the msq                                        */
-for i in range(1, ANALYZE_PLANNING_SERVERS+1):
-
-    d = event.Event()                   # departure                                     */
-    d.t = START
-    d.x = OFF
-    monitoring_events.append(d)
+# events initialization: from START with flag OFF                                        */
+planning_events = planningCentre.get_events()
 
 
-# ************************************ Execution area ************************************
-# */
-# ----------------------------------------------------------------------------------------
-# *                          Initialize 1 Infinite Server
-# * --------------------------------------------------------------------------------------
-# */
-
-# TO-DO
-
-
-# ***************************************** System ***************************************
+# ***************************************** System ****************************************
 
 # SYSTEM VALUES
-number = 0                                     # number in the system                   */
-departed_jobs = 0                              # departed jobs from the system          */
+number = 0                                     # number in the system                    */
+departed_jobs = 0                              # departed jobs from the system           */
 
-# **************************************** Simulation ************************************
+# **************************************** Simulation *************************************
 # plant initial seed
 rngs.plantSeeds(123456789)
-
+ARRIVALS_STREAM = 0
 t = clock.Time()
-t.current = START                               # set the clock                         */
-t.completion = INFINITY                         # the first event can't be a completion */
+t.current = START                               # set the clock                          */
+t.completion = INFINITY                         # the first event can't be a completion  */
 
-events = monitoring_events+analyze_plan_events+[]
+events = monitoring_events+planning_events
+arrival, e = monitoringCentre.get_arrival(ARRIVALS_STREAM)
+events[e].t = arrival                           # first event is of course an arrival    */
+events[e].x = ON                                # schedule first arrival                 */
 
-# QUA SERVIRANNO 3 streams diversi si ok
+while (events[0].x != 0) or (events[1].x != 0) or (events[3].x != 0) or (number != 0):
 
-events[0].t = ssq.GetArrival()                  # first event is of course an arrival   */
-events[0].x = ON                                # schedule the first arrival            */
-
-events[2].t = ssq.GetArrival()                  # first event is of course an arrival   */
-events[2].x = ON                                # schedule the first arrival            */
-
-events[4].t = ssq.GetArrival()                  # first event is of course an arrival   */
-events[4].x = ON                                # schedule the first arrival            */
-
-while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number != 0):
-
-    # get the next event in the timeline                                                */
-
-    e = event.NextEvent(events)                 # next event                            */
-    t.next = events[e].t                        # next event time                       */
-    t.current = t.next                          # advance the clock                     */
+    # get the next event in the timeline                                                 */
+    e = event.next_event(events)                # next event                             */
+    t.next = events[e].t                        # next event time                        */
+    t.current = t.next                          # advance the clock                      */
 
     #area     += (t.next - t.current) * number      # update integral   */
     #if number > 0:                                 # update integrals  */
@@ -115,73 +72,64 @@ while (events[0].x != 0) or (events[2].x != 0) or (events[4].x != 0) or (number 
     #    area.service += (t.next - t.current)
     # EndIf
 
-    # ------------------------------------------------------------------------------------
+    # -------------------------------------------------------------------------------------
     # *                          Monitoring Area Events
-    # * ----------------------------------------------------------------------------------
+    # * -----------------------------------------------------------------------------------
     # */
-    if e == 0 or e == 2 or e == 4:              # process an arrival in the Monitoring  */
-        number += 1                             # plus one job in the system            */
-        ssqs[e/2].number += 1                   # plus one job in one of the ssq        */
+    if e in range(0, MONITORING_SERVERS-1):     # process an arrival in the MonitoringC  */
+        number += 1                             # plus one job in the system             */
+        monitoringCentre.number[e] += 1         # plus one job in one of the ssqs        */
+        monitoringCentre.queue[e] += 1          # plus one job in one of the queues      */
 
-        events[e].t = ssq.getArrival()          # prepares next arrival                 */
-        if events[e].t > STOP:                  # if the arrival is out of time:        */
-            events[e].x = OFF                   # turn off the arrivals                 */
+        arrival, w = monitoringCentre.get_arrival(ARRIVALS_STREAM)
+        events[w].t = arrival                   # generate next arrival                  */
+        events[w].x = ON                        # schedule the arrival                   */
 
-        if ssqs[e/2].number == 1:               # prepares next departure               */
-            events[e+1].t = t.current + ssq.getService()
+        if events[w].t > STOP:                  # if the arrival is out of time:         */
+            events[w].x = OFF                   # turn off the arrivals                  */
+
+        if monitoringCentre.number[e] == 1:     # prepares next departure                */
+            events[e+MONITORING_SERVERS].t = t.current + monitoringCentre.get_service(e+MONITORING_SERVERS)
+            events[e+MONITORING_SERVERS].x = ON
+
+    if e in range(MONITORING_SERVERS, MONITORING_SERVERS*2-1):     # process a departure from the Monitor   */
+        monitoringCentre.departed[e-MONITORING_SERVERS] += 1       # plus one job departed from of the ssq  */
+        monitoringCentre.number[e-MONITORING_SERVERS] -= 1         # minus one job in one of the ssq        */
+
+        if monitoringCentre.number[e-MONITORING_SERVERS] > 0:      # prepares next departure                */
+            events[e].t = t.current + monitoringCentre.get_service(e)
+        else:
+            events[e].x = OFF
+
+        events[MONITORING_SERVERS*2].x = ON                        # signal an arrival in the An&Plan area  */
+        events[MONITORING_SERVERS*2].t = t.current
+
+    # -------------------------------------------------------------------------------------
+    # *                          Analyze&Plan Area Events
+    # * -----------------------------------------------------------------------------------
+    # */
+
+    if e == MONITORING_SERVERS*2:               # process an arrival to server   An&Pla  */
+        planningCentre.number += 1              # plus one job in the area               */
+        planningCentre.queue += 1               # plus one job in the queue              */
+        arrival, w = planningCentre.get_arrival(e)
+        events[w].t = arrival                   # generate next arrival                  */
+        events[w].x = ON                        # schedule the arrival                   */
+
+        if events[w].t > STOP:                  # if the arrival is out of time:         */
+            events[w].x = OFF                   # turn off the arrivals                  */
+
+        if planningCentre.number == 1:       # prepares next departure                */
+            events[e+1].t = t.current + monitoringCentre.get_service(e+1)
             events[e+1].x = ON
 
-    if e == 1 or e == 3 or e == 5:              # process a departure from the Monitor  */
-        ssqs[(e-1)/2].departed += 1             # plus one job departed from of the ssq */
-        ssqs[(e-1)/2].number -= 1               # minus one job in one of the ssq       */
+    if e == MONITORING_SERVERS*2+1:
+        planningCentre.number -= 1                         # minus one job in the area              */
+        planningCentre.departed += 1                       # plus one departure from the PArea      */
+        number -= 1                                        # minus one job in the system            */
+        departed_jobs += 1                                 # plus one departed job from the system  */
 
-        if ssqs[(e-1)/2].number > 0:            # prepares next departure               */
-            events[e].t = t.current + ssq.getService()
+        if planningCentre.number > 0:                      # prepares next departure                */
+            events[e].t = t.current + planningCentre.get_service(e)
         else:
             events[e].x = OFF
-
-        events[6].x = ON                        # signal an arrival in the An&Plan area */
-        events[6].t = t.current
-
-    # ------------------------------------------------------------------------------------
-    # *                          Analyze&Plan Area Events
-    # * ----------------------------------------------------------------------------------
-    # */
-
-    if e == 6:                                  # process an arrival to server   An&Pla */
-        msq.number += 1                         # plus one job in the msq               */
-
-        if msq.number <= msq.SERVERS:           # prepares next departure               */
-            s = msq.findOne(analyze_plan_events)
-            events[e+s].t = t.current + msq.getService()
-            events[e+s].x = ON
-
-    if e == 7 and e == 8 and e == 9:
-        msq.departed += 1                       # plus one departure from the An Area   */
-        msq.number -= 1                         # minus one job in the msq              */
-
-        if msq.number >= msq.SERVERS:           # prepares next departure               */
-            events[e].t = t.current + msq.getService()
-        else:
-            events[e].x = OFF
-
-        events[10].x = ON                        # signal an arrival in the Exec area   */
-        events[10].t = t.current
-    # * ----------------------------------------------------------------------------------
-    # *                             Execute Area Events
-    # * ----------------------------------------------------------------------------------
-    # */
-
-    # TO-DO
-
-    else:
-        departed_jobs += 1                                     # from server s         */
-        number -= 1
-        s = e
-        if number >= SERVERS:
-            service = GetService()
-            sum[s].service += service
-            sum[s].served += 1
-            events[s].t = t.current + service
-        else:
-            events[s].x = 0

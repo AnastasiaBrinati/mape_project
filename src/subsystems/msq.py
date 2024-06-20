@@ -2,7 +2,7 @@ from src.libs import rngs as rngs
 from src.libs import rvgs as rvgs
 
 
-def getArrival():
+def get_arrival():
     # ---------------------------------------------
     # * generate the next arrival time, with rate 1/2
     # * ---------------------------------------------
@@ -14,13 +14,25 @@ def getArrival():
     return arrivalTemp
 
 
-def getService():
+def get_service():
     # --------------------------------------------
     # * generate the next service time with rate 1/6
     # * --------------------------------------------
     # */
     rngs.selectStream(1)
     return rvgs.Uniform(2.0, 10.0)
+
+
+def find_one(events):
+    # -------------------------------------------------------
+    # * return the index of the first available server
+    # * -----------------------------------------------------
+    # */
+    for i in range(1, len(events)):
+        if events[i].x == 1:
+            return i
+
+    return -1
 
 
 class MSQ:
@@ -32,20 +44,10 @@ class MSQ:
     service = 0.0          # service times                        */
     departed = 0           # number served                        */
 
-    def findOne(self, events):
-        # -------------------------------------------------------
-        # * return the index of the first available server
-        # * -----------------------------------------------------
-        # */
-        for i in range(1, len(events)):
-            if events[i].x == 1:
-                return i
-
-        return -1
-
 
 ########################### Main Program ##################################
 
+SERVERS = 10
 t = time()
 events = [event() for i in range(SERVERS + 1)]
 number = 0             # number in the node                 */
@@ -66,7 +68,7 @@ for s in range(1, SERVERS+1):
 
 
 while (events[0].x != 0) or (number != 0):
-    e         = Event.NextEvent(events)                  # next event index   */
+    e         = Event.next_event(events)  # next event index   */
     t.next    = events[e].t                        # next event time    */
     area     += (t.next - t.current) * number      # update integral    */
     t.current = t.next                             # advance the clock  */
@@ -91,7 +93,7 @@ while (events[0].x != 0) or (number != 0):
         number -= 1
         s = e
         if number >= SERVERS:
-            service = GetService()
+            service = get_service()
             sum[s].service += service
             sum[s].served += 1
             events[s].t = t.current + service
