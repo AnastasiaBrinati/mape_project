@@ -58,7 +58,7 @@ arrival, e = monitoringCentre.get_arrival(ARRIVALS_STREAM)
 events[e].t = arrival                           # first event is of course an arrival    */
 events[e].x = ON                                # schedule first arrival                 */
 
-while (events[0].x != 0) or (events[1].x != 0) or (events[3].x != 0) or (number != 0):
+while (events[0].x != 0) or (events[1].x != 0) or (events[2].x != 0) or (number != 0):
 
     # get the next event in the timeline                                                 */
     e = event.next_event(events)                # next event                             */

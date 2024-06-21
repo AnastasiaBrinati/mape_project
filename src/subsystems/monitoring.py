@@ -14,6 +14,10 @@ ERROR = 0.16
 WARNING = 1 - FATAL - ERROR
 
 
+# rates
+LAMBDA = 1.446761181
+
+
 class MonitoringCentre:
     number = []       # time integrated number in the node    */
     queue = []        # time integrated number in the queues  */
@@ -63,7 +67,7 @@ class MonitoringCentre:
         global arrivalTemp
 
         rngs.selectStream(stream)
-        arrivalTemp += rvgs.Exponential(2.0)
+        arrivalTemp += rvgs.Exponential(LAMBDA)
 
         centre = self.route_arrival()
         return arrivalTemp, centre
