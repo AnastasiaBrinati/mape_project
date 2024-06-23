@@ -23,17 +23,17 @@ def main(n):
     for i in range(n):
         try:
             res = system.simulation()
-            r_m, w_m, r_p, w_p = res[0], res[1], res[2], res[3]
+            response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan = res[0], res[1], res[2], res[3]
 
-            r_m_avg = sum(r_m) / float(len(r_m))
-            w_m_avg = sum(w_m) / float(len(w_m))
-            r_p_avg = sum(r_p) / float(len(r_p))
-            w_p_avg = sum(w_p) / float(len(w_p))
+            response_times_monitor_avg = sum(response_times_monitor) / float(len(response_times_monitor))
+            waiting_times_monitor_avg = sum(waiting_times_monitor) / float(len(waiting_times_monitor))
+            response_times_plan_avg = sum(response_times_plan) / float(len(response_times_plan))
+            waiting_times_plan_avg = sum(waiting_times_plan) / float(len(waiting_times_plan))
 
-            RESPONSE_TIME_MONITOR.append(r_m_avg)
-            WAITING_TIME_MONITOR.append(w_m_avg)
-            RESPONSE_TIME_PLAN.append(r_p_avg)
-            WAITING_TIME_PLAN.append(w_p_avg)
+            RESPONSE_TIME_MONITOR.append(response_times_monitor_avg)
+            WAITING_TIME_MONITOR.append(waiting_times_monitor_avg)
+            RESPONSE_TIME_PLAN.append(response_times_plan_avg)
+            WAITING_TIME_PLAN.append(waiting_times_plan_avg)
 
         except Exception as e:
             print(f"An error occurred during execution {i + 1}: {e}")
