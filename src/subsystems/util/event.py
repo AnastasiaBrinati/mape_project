@@ -13,11 +13,14 @@ def next_event(events):
     # */
 
     i = 0
+    j = 0
     imminent = math.inf
-    while i < len(events):
+    while j < len(events):
         # filter active events and check for the most imminent      */
-        if events[i].x == 1 and events[i].t < imminent:
-            imminent = events[i].t
+        if events[j].x == 1 and events[j].t < imminent:
+            imminent = events[j].t
+            i = j
+        j += 1
 
     # in case of a draw return the first most imminent              */
     return i

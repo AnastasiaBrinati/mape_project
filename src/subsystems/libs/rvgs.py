@@ -37,7 +37,7 @@
 #--------------------------------------------------------------------------
 
 from math import log,sqrt,exp
-from src.libs import rngs
+from . import rngs
 
 
 def Bernoulli(p):

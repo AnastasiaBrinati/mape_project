@@ -1,6 +1,6 @@
-
-from src.libs import rngs
-from src.utils import event, clock
+from src.subsystems.libs import rngs
+from src.subsystems.util import event
+from src.subsystems.util import clock
 from src.subsystems import msq, ssq
 
 ON = 1                                          # flag to signal active event            */

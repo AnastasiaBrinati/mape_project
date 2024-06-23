@@ -1,81 +1,109 @@
-from typing import Tuple, Any
+from typing import Any
 
-from src.libs import rngs as rngs
-from src.libs import rvgs as rvgs
-from src.utils import event
+from .libs import rvms, rngs, rvgs
+from .util import event
 
-ON = 1  # flag to signal active event            */
-OFF = 0  # flag to signal inactive event          */
-START = 0.0  # initial time                           */
+ON = 1                          # flag to signal active event          */
+OFF = 0                         # flag to signal inactive event        */
+START = 0.0                     # initial time                         */
 
 # routing probabilities
 FATAL = 0.12
 ERROR = 0.16
 WARNING = 1 - FATAL - ERROR
 
+# arrival rate
+LAMBDA = 0.1446
+ARRIVAL_TEMP = 0.0
 
-# rates
-LAMBDA = 1.446761181
+# service times distribution:                                          */
+#                X =  Lognormal(a, b)   x > 0                          */
+# The mean and variance are                                            */
+#               μ = mean = exp(a + 0.5*b*b)  = 0.55                    */
+#               σ^2 = variance = (exp(b*b) - 1)*exp(2*a + b*b) = 0.45  */
+# Follows that                                                         */
+#               a = log(μ) - b^2/2                                     */
+#               b = sqrt ( log( [σ^2 / log(μ)^2] + 1 ) )               */
+a = -0.843414
+b = 0.714951
+
+# TRUNCATION                                                           */
+# right tail cut at x = 5 seconds                                      */
+#                  β = 1-Pr(X ≤ x) = 1-F(x)                            */
+# determine left-tail and right-tail truncation probabilities α and β  */
+# in our case only the right truncation is needed                      */
+#   alpha = rvms.cdfLognormal(a, b, x=0.0)                             # α */
+beta = 1.0 - rvms.cdfLognormal(a, b, x=5.0)                        # β */
+# constrained inversion                                                */
+u = rvgs.Uniform(0.0, 1.0 - beta)
+# now we can use: rvms.idfLognormal(a, b, u)                           */
 
 
 class MonitoringCentre:
-    number = []       # time integrated number in the node    */
-    queue = []        # time integrated number in the queues  */
-    service = 0.0     # time integrated number in service     */
-    departed = []     # number served                         */
-    servers = 0       # number of servers                     */
+    number = []                 # time integrated number in the node    */
+    queue = []                  # time integrated number in the queues  */
+    service = 0.0               # time integrated number in service     */
+    departed = []               # number served                         */
+    servers = 0                 # number of servers                     */
 
     def __init__(self, servers) -> None:
         self.servers = servers
         self.number = [0 for i in range(servers)]
-        self.queue = [0 for i in range(servers)]
+        self.queue = [[] for i in range(servers)]
         self.departed = [0 for i in range(servers)]
         pass
 
     def get_events(self) -> list:
+        # azzera la variabile ARRIVAL_TEMP                             */
+        # quando sono richiesti gli eventi                             */
+        global ARRIVAL_TEMP
+        ARRIVAL_TEMP = 0.0
         monitoring_events = []
-        # one arrival event for each ssq                                        */
+        # one arrival event for each ssq                                */
         for i in range(self.servers):
-            a = event.Event()  # arrival                                        */
+            a = event.Event()   # arrival                               */
             a.t = START
             a.x = OFF
             monitoring_events.append(a)
 
-        # one departure event for each ssq                                      */
+        # one departure event for each ssq                              */
         for i in range(self.servers):
-            d = event.Event()  # departure                                      */
+            d = event.Event()   # departure                             */
             d.t = START
             d.x = OFF
             monitoring_events.append(d)
 
         return monitoring_events
 
-    def route_arrival(self) -> int:
+    @staticmethod
+    def route_arrival() -> int:
         r = rngs.random()
-        if r == FATAL:
+        if r <= FATAL:
             return 0
-        elif r == ERROR:
+        elif r <= ERROR:
             return 1
         else:
             return 2
 
     def get_arrival(self, stream) -> tuple[Any, int]:
         # ----------------------------------------------
-        # * generate the next arrival time, with rate 1/2
+        # * generate the next arrival time
+        # * same stream, different routing
         # * --------------------------------------------
         # */
-        global arrivalTemp
+        global ARRIVAL_TEMP
 
         rngs.selectStream(stream)
-        arrivalTemp += rvgs.Exponential(LAMBDA)
+        ARRIVAL_TEMP += rvgs.Exponential(LAMBDA)
 
         centre = self.route_arrival()
-        return arrivalTemp, centre
+        return ARRIVAL_TEMP, centre
 
     def get_service(self, stream_index) -> int:
         # ---------------------------------------------
-        # * generate the next service time with rate 2/3
+        # * generate the next service time for each
+        # * server independently (each their own stream)
         # * --------------------------------------------
         # */
         rngs.selectStream(stream_index)
-        return rvgs.Erlang(5, 0.3)
+        return rvms.idfLognormal(a, b, u)
