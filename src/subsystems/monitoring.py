@@ -13,7 +13,7 @@ ERROR = 0.16
 WARNING = 1 - FATAL - ERROR
 
 # arrival rate
-LAMBDA = 0.1446
+LAMBDA = 1.446
 MU = 0.55
 ARRIVAL_TEMP = 0.0
 
@@ -25,8 +25,8 @@ ARRIVAL_TEMP = 0.0
 # Follows that                                                         */
 #               a = log(μ) - b^2/2                                     */
 #               b = sqrt ( log( [σ^2 / log(μ)^2] + 1 ) )               */
-a = -0.843414
-b = 0.714951
+a = -0.854075
+b = 0.715875
 
 # TRUNCATION                                                           */
 # right tail cut at x = 5 seconds                                      */
@@ -82,7 +82,7 @@ class MonitoringCentre:
         r = rngs.random()
         if r <= FATAL:
             return 0
-        elif r <= ERROR:
+        elif FATAL < r <= FATAL+ERROR:
             return 1
         else:
             return 2

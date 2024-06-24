@@ -1,3 +1,5 @@
+import sys
+
 from .monitoring import MonitoringCentre
 from .planning import PlanningCentre
 import numpy as np
@@ -6,20 +8,21 @@ from .util import event, clock
 ON = 1                                                                          # flag to signal active event         */
 OFF = 0                                                                         # flag to signal inactive event       */
 START = 0.0                                                                     # initial time                        */
-STOP = 2000.0                                                                   # terminal time (close the door)      */
-INFINITY = (100.0 * STOP)                                                       # must be much larger than STOP       */
 
 MONITORING_SERVERS = 3
 ARRIVALS_STREAM = 0
 
 
-def simulation() -> list:
+def simulation(stop) -> list:
     # ***************************************************** Monitoring area ********************************************
     # */
     # ------------------------------------------------------------------------------------------------------------------
     # *                                     Initialize 3 SSQs for the Monitoring Area
     # * ----------------------------------------------------------------------------------------------------------------
     # */
+
+    STOP = stop
+    INFINITY = (100.0 * STOP)                                                   # must be much larger than STOP       */
 
     waiting_times_monitor = []
     response_times_monitor = []

@@ -14,8 +14,8 @@ START = 0.0                     # initial time                         */
 #               a = log(μ) - b^2/2                                     */
 #               b = sqrt ( log( [σ^2 / log(μ)^2] + 1 ) )               */
 mu = 0.3 # seconds
-a = -0.843414
-b = 0.714951
+a = -0.854075
+b = 0.715875
 
 # TRUNCATION                                                           */
 # right tail cut at x = 3 seconds                                      */
