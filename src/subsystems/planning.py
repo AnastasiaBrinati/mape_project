@@ -13,6 +13,7 @@ START = 0.0                     # initial time                         */
 # Follows that                                                         */
 #               a = log(μ) - b^2/2                                     */
 #               b = sqrt ( log( [σ^2 / log(μ)^2] + 1 ) )               */
+mu = 0.3 # seconds
 a = -0.843414
 b = 0.714951
 
@@ -21,7 +22,7 @@ b = 0.714951
 #                  β = 1-Pr(X ≤ x) = 1-F(x)                            */
 # determine left-tail and right-tail truncation probabilities α and β  */
 # in our case only the right truncation is needed                      */
-#   alpha = rvms.cdfLognormal(a, b, x=0.0)                     # α = 0 */
+#   alpha = rvms.cdfLognormal(a, b, x=0.0)                         # α = 0 */
 beta = 1.0 - rvms.cdfLognormal(a, b, x=3.0)                        # β */
 # constrained inversion                                                */
 u = rvgs.Uniform(0.0, 1.0 - beta)
@@ -40,15 +41,15 @@ class PlanningCentre:
 
         planning_events = []
         # one arrival and one departure event for each ssq               */
-        a = event.Event()  # arrival                                     */
-        a.t = START
-        a.x = OFF
-        planning_events.append(a)
+        arrival = event.Event()  # arrival                                     */
+        arrival.t = START
+        arrival.x = OFF
+        planning_events.append(arrival)
 
-        d = event.Event()  # departure                                   */
-        d.t = START
-        d.x = OFF
-        planning_events.append(d)
+        departure = event.Event()  # departure                                   */
+        departure.t = START
+        departure.x = OFF
+        planning_events.append(departure)
 
         return planning_events
 
@@ -71,4 +72,6 @@ class PlanningCentre:
         # * --------------------------------------------
         # */
         rngs.selectStream(stream)
+        # TO VERIFY:
+        # return rvgs.Exponential(mu)
         return rvms.idfLognormal(a, b, u)

@@ -1,7 +1,6 @@
-from .libs import rngs
 from .monitoring import MonitoringCentre
 from .planning import PlanningCentre
-
+import numpy as np
 from .util import event, clock
 
 ON = 1                                                                          # flag to signal active event         */
@@ -62,9 +61,21 @@ def simulation() -> list:
     t.completion = INFINITY                                                      # first event can't be a completion  */
 
     events = monitoring_events+planning_events
-    arrival, e = monitoring_centre.get_arrival(ARRIVALS_STREAM)
-    events[e].t = arrival                                                        # first event is of course an arrival*/
+    first_arrival, e = monitoring_centre.get_arrival(ARRIVALS_STREAM)
+    events[e].t = first_arrival                                                  # first event is of course an arrival*/
     events[e].x = ON                                                             # schedule first arrival             */
+
+    first_arrival_mon = [INFINITY, INFINITY, INFINITY]
+    first = {
+        "monitoring": [0, 0, 0, 0.0, 0.0, 0.0],
+        "planning": [0, 0.0]
+    }
+
+    last_served_mon = [START, START, START]
+    last = {
+        "monitoring": [0.0, 0.0, 0.0],
+        "planning": 0.0
+    }
 
     while (events[0].x == ON) or (events[1].x == ON) or (events[2].x == ON) or (number != 0):
 
@@ -83,6 +94,10 @@ def simulation() -> list:
             monitoring_centre.number[e] += 1                                     # plus one job in one of the ssqs    */
             events[e].x = OFF                                                    # turn off arrivals at this centre   */
 
+            if first['monitoring'][e] == 0:
+                first['monitoring'][e+MONITORING_SERVERS] = t.current
+                first['monitoring'][e] = 1
+
             arrived = events[e].t
             arrival, w = monitoring_centre.get_arrival(ARRIVALS_STREAM)          # generate next arrival              */
             events[w].t = arrival                                                # prepare event arrival              */
@@ -92,11 +107,13 @@ def simulation() -> list:
                 events[w].x = OFF                                                # turn off the arrivals              */
 
             if monitoring_centre.number[e] == 1:                                 # prepares next departure            */
-                served = t.current + monitoring_centre.get_service(e+MONITORING_SERVERS)
+                service = monitoring_centre.get_service(e+MONITORING_SERVERS)
+                served = t.current + service
+                monitoring_centre.service[e] += service                          # update integrals                   */
                 events[e+MONITORING_SERVERS].t = served
                 events[e+MONITORING_SERVERS].x = ON
                 waiting_times_monitor.append(0.0)                                # update integrals                   */
-                response_times_monitor.append(served - arrived)                  # update integrals                   */
+                response_times_monitor.append(served - arrived)
             else:
                 # save the timestamp of the arrival as token for the job                                              */
                 monitoring_centre.queue[e].append(t.current)                     # plus one job in one of the queues  */
@@ -108,14 +125,18 @@ def simulation() -> list:
             if len(monitoring_centre.queue[e-MONITORING_SERVERS]) > 0:           # prepares next departure            */
                 arrived = monitoring_centre.queue[e-MONITORING_SERVERS].pop(0)
                 waiting_times_monitor.append(t.current - arrived)                # update integrals                   */
-                served = t.current + monitoring_centre.get_service(e)
+                service = monitoring_centre.get_service(e)
+                served = t.current + service
                 events[e].t = served                                             # prepares next departure            */
-                response_times_monitor.append(served - arrived)                  # update integrals                   */
+                response_times_monitor.append(served - arrived)
+                monitoring_centre.service[e-MONITORING_SERVERS] += service       # update integrals                   */
             else:
                 events[e].x = OFF
 
             events[MONITORING_SERVERS*2].x = ON                                  # signal an arrival in the An&PlanC  */
             events[MONITORING_SERVERS*2].t = t.current
+
+            last['monitoring'][e-MONITORING_SERVERS] = t.current
 
         # --------------------------------------------------------------------------------------------------------------
         # *                                          Analyze&Plan Area Events
@@ -124,14 +145,20 @@ def simulation() -> list:
 
         if e == MONITORING_SERVERS*2:                                            # process an arrival to An&PlaC      */
             planning_centre.number += 1                                          # plus one job in the area           */
+
+            if first['planning'][0] == 0:
+                first['planning'][1] = t.current
+                first['planning'][0] = 1
+
             events[e].x = OFF                                                    # turn off the arrival               */
             if planning_centre.number == 1:                                      # prepares next departure            */
-                s = planning_centre.get_service(e+1)
-                served = t.current + s
+                service = planning_centre.get_service(e+1)
+                served = t.current + service
                 events[e+1].t = served
                 events[e+1].x = ON
                 waiting_times_plan.append(0.0)                                   # update integrals                   */
-                response_times_plan.append(served - t.current)                   # update integrals                   */
+                response_times_plan.append(served - t.current)
+                planning_centre.service += service                               # update integrals                   */
             else:
                 planning_centre.queue.append(t.current)                          # plus one job in the queue          */
 
@@ -144,11 +171,22 @@ def simulation() -> list:
             if len(planning_centre.queue) > 0:                                   # prepares next departure            */
                 arrived = planning_centre.queue.pop(0)
                 waiting_times_plan.append(t.current - arrived)                   # update integrals                   */
-                served = t.current + planning_centre.get_service(e)
+                service = planning_centre.get_service(e)
+                served = t.current + service
                 events[e].t = served
-                response_times_plan.append(served - arrived)                     # update integrals                   */
+                response_times_plan.append(served - arrived)
+                planning_centre.service += service                               # update integrals                   */
 
             else:
                 events[e].x = OFF
 
-    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan]
+            last['planning'] = t.current
+
+    rho_mon_1 = monitoring_centre.service[0] / (last['monitoring'][0] - first['monitoring'][3])
+    rho_mon_2 = monitoring_centre.service[1] / (last['monitoring'][1] - first['monitoring'][4])
+    rho_mon_3 = monitoring_centre.service[2] / (last['monitoring'][2] - first['monitoring'][5])
+
+    # planning_centre.departed == departed_jobs
+    rho_pla = planning_centre.service / (last['planning'] - first['planning'][1])
+
+    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla]

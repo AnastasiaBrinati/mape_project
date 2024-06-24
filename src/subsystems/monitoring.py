@@ -14,6 +14,7 @@ WARNING = 1 - FATAL - ERROR
 
 # arrival rate
 LAMBDA = 0.1446
+MU = 0.55
 ARRIVAL_TEMP = 0.0
 
 # service times distribution:                                          */
@@ -42,7 +43,7 @@ u = rvgs.Uniform(0.0, 1.0 - beta)
 class MonitoringCentre:
     number = []                 # time integrated number in the node    */
     queue = []                  # time integrated number in the queues  */
-    service = 0.0               # time integrated number in service     */
+    service = []                # time integrated number in service     */
     departed = []               # number served                         */
     servers = 0                 # number of servers                     */
 
@@ -51,6 +52,7 @@ class MonitoringCentre:
         self.number = [0 for i in range(servers)]
         self.queue = [[] for i in range(servers)]
         self.departed = [0 for i in range(servers)]
+        self.service = [0.0 for i in range(servers)]
         pass
 
     def get_events(self) -> list:
@@ -61,17 +63,17 @@ class MonitoringCentre:
         monitoring_events = []
         # one arrival event for each ssq                                */
         for i in range(self.servers):
-            a = event.Event()   # arrival                               */
-            a.t = START
-            a.x = OFF
-            monitoring_events.append(a)
+            arrival = event.Event()   # arrival                               */
+            arrival.t = START
+            arrival.x = OFF
+            monitoring_events.append(arrival)
 
         # one departure event for each ssq                              */
         for i in range(self.servers):
-            d = event.Event()   # departure                             */
-            d.t = START
-            d.x = OFF
-            monitoring_events.append(d)
+            departure = event.Event()   # departure                             */
+            departure.t = START
+            departure.x = OFF
+            monitoring_events.append(departure)
 
         return monitoring_events
 
@@ -94,16 +96,18 @@ class MonitoringCentre:
         global ARRIVAL_TEMP
 
         rngs.selectStream(stream)
-        ARRIVAL_TEMP += rvgs.Exponential(LAMBDA)
+        ARRIVAL_TEMP += rvgs.Exponential(1/LAMBDA)
 
         centre = self.route_arrival()
         return ARRIVAL_TEMP, centre
 
-    def get_service(self, stream_index) -> int:
+    def get_service(self, stream) -> int:
         # ---------------------------------------------
         # * generate the next service time for each
         # * server independently (each their own stream)
         # * --------------------------------------------
         # */
-        rngs.selectStream(stream_index)
+        rngs.selectStream(stream)
+        # TO VERIFY:
+        # return rvgs.Exponential(MU)
         return rvms.idfLognormal(a, b, u)
