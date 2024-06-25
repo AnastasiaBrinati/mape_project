@@ -161,7 +161,7 @@ if __name__ == "__main__":
 
     elif sys.argv[2] == "infinite":
         stop = 100000.0
-        batch_size = 16
+        batch_size = 128
         infinite(SEED, stop, batch_size=batch_size)
 
         # response_time_monitor_mean: Provided no points are discarded,                                           */

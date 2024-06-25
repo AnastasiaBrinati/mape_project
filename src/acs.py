@@ -32,7 +32,7 @@
 import sys
 from math import sqrt
 
-K = 50                             # K is the maximum lag */
+K = 16                             # K is the maximum lag */
 SIZE = (K + 1)
 
 
