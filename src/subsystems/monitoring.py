@@ -52,7 +52,7 @@ class MonitoringCentre:
         self.number = [0 for i in range(servers)]
         self.queue = [[] for i in range(servers)]
         self.departed = [0 for i in range(servers)]
-        self.service = [0.0 for i in range(servers)]
+        self.service = [[] for i in range(servers)]
         pass
 
     def get_events(self) -> list:
@@ -109,5 +109,5 @@ class MonitoringCentre:
         # */
         rngs.selectStream(stream)
         # TO VERIFY:
-        # return rvgs.Exponential(MU)
+        #return rvgs.Exponential(MU)
         return rvms.idfLognormal(a, b, u)

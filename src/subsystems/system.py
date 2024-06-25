@@ -1,9 +1,7 @@
-import sys
-
 from .monitoring import MonitoringCentre
 from .planning import PlanningCentre
-import numpy as np
 from .util import event, clock
+import numpy as np
 
 ON = 1                                                                          # flag to signal active event         */
 OFF = 0                                                                         # flag to signal inactive event       */
@@ -13,23 +11,34 @@ MONITORING_SERVERS = 3
 ARRIVALS_STREAM = 0
 
 
-def simulation(stop) -> list:
-    # ***************************************************** Monitoring area ********************************************
-    # */
-    # ------------------------------------------------------------------------------------------------------------------
-    # *                                     Initialize 3 SSQs for the Monitoring Area
-    # * ----------------------------------------------------------------------------------------------------------------
-    # */
+def simulation(stop, batch_size=1.0) -> list:
+    INFINITY = (100.0 * stop)                                                   # must be much larger than stop       */
 
-    STOP = stop
-    INFINITY = (100.0 * STOP)                                                   # must be much larger than STOP       */
-
+    # statistics                                                                                                      */
     waiting_times_monitor = []
     response_times_monitor = []
 
     waiting_times_plan = []
     response_times_plan = []
 
+    k_mon = 0
+    batch_response_times_monitor = []
+    batch_waiting_times_monitor = []
+    batch_rho1_monitor = []
+    batch_rho2_monitor = []
+    batch_rho3_monitor = []
+
+    k_pla = 0
+    batch_response_times_plan = []
+    batch_waiting_times_plan = []
+    batch_rho_plan = []
+
+    # ***************************************************** Monitoring area ********************************************
+    # */
+    # ------------------------------------------------------------------------------------------------------------------
+    # *                                     Initialize 3 SSQs for the Monitoring Area
+    # * ----------------------------------------------------------------------------------------------------------------
+    # */
     # sub-systems initialization: empty SSQs                                                                          */
     monitoring_centre = MonitoringCentre(MONITORING_SERVERS)
 
@@ -68,16 +77,14 @@ def simulation(stop) -> list:
     events[e].t = first_arrival                                                  # first event is of course an arrival*/
     events[e].x = ON                                                             # schedule first arrival             */
 
-    first_arrival_mon = [INFINITY, INFINITY, INFINITY]
+    # structures to keep track of first and last event at each centre                                                 */
     first = {
-        "monitoring": [0, 0, 0, 0.0, 0.0, 0.0],
-        "planning": [0, 0.0]
+        "monitoring": [OFF, OFF, OFF, START, START, START],
+        "planning": [OFF, START]
     }
-
-    last_served_mon = [START, START, START]
     last = {
-        "monitoring": [0.0, 0.0, 0.0],
-        "planning": 0.0
+        "monitoring": [START, START, START],
+        "planning": START
     }
 
     while (events[0].x == ON) or (events[1].x == ON) or (events[2].x == ON) or (number != 0):
@@ -106,33 +113,33 @@ def simulation(stop) -> list:
             events[w].t = arrival                                                # prepare event arrival              */
             events[w].x = ON                                                     # schedule the arrival               */
 
-            if events[w].t > STOP:                                               # if the arrival is out of time:     */
+            if events[w].t > stop:                                               # if the arrival is out of time:     */
                 events[w].x = OFF                                                # turn off the arrivals              */
 
             if monitoring_centre.number[e] == 1:                                 # prepares next departure            */
                 service = monitoring_centre.get_service(e+MONITORING_SERVERS)
                 served = t.current + service
-                monitoring_centre.service[e] += service                          # update integrals                   */
-                events[e+MONITORING_SERVERS].t = served
-                events[e+MONITORING_SERVERS].x = ON
-                waiting_times_monitor.append(0.0)                                # update integrals                   */
-                response_times_monitor.append(served - arrived)
+                monitoring_centre.service[e].append(service)                     # update integrals for utilization   */
+                events[e+MONITORING_SERVERS].t = served                          # prepare departure event            */
+                events[e+MONITORING_SERVERS].x = ON                              # schedule departure                 */
+                waiting_times_monitor.append(0.0)                                # update integrals for E[Tq]         */
+                response_times_monitor.append(served - arrived)                  # update integrals for E[Ts]         */
             else:
                 # save the timestamp of the arrival as token for the job                                              */
                 monitoring_centre.queue[e].append(t.current)                     # plus one job in one of the queues  */
 
         if e in range(MONITORING_SERVERS, MONITORING_SERVERS*2):                 # process a departure from MonitorC  */
-            monitoring_centre.departed[e-MONITORING_SERVERS] += 1                # plus one j departed from the ssq   */
             monitoring_centre.number[e-MONITORING_SERVERS] -= 1                  # minus one job in one of the ssq    */
+            monitoring_centre.departed[e-MONITORING_SERVERS] += 1                # plus one j departed from the ssq   */
 
             if len(monitoring_centre.queue[e-MONITORING_SERVERS]) > 0:           # prepares next departure            */
                 arrived = monitoring_centre.queue[e-MONITORING_SERVERS].pop(0)
-                waiting_times_monitor.append(t.current - arrived)                # update integrals                   */
                 service = monitoring_centre.get_service(e)
+                monitoring_centre.service[e-MONITORING_SERVERS].append(service)  # update integrals for utilization   */
                 served = t.current + service
                 events[e].t = served                                             # prepares next departure            */
-                response_times_monitor.append(served - arrived)
-                monitoring_centre.service[e-MONITORING_SERVERS] += service       # update integrals                   */
+                waiting_times_monitor.append(t.current - arrived)                # update integrals for E[Tq]         */
+                response_times_monitor.append(served - arrived)                  # update integrals for E[Tq]         */
             else:
                 events[e].x = OFF
 
@@ -140,6 +147,27 @@ def simulation(stop) -> list:
             events[MONITORING_SERVERS*2].t = t.current
 
             last['monitoring'][e-MONITORING_SERVERS] = t.current
+
+            # FOR INFINITE-HORIZON SIMULATION
+            if batch_size > 1:
+                if (monitoring_centre.departed[0]+monitoring_centre.departed[1]+monitoring_centre.departed[2])%batch_size == 0:
+                    # Time to save up some metrics
+
+                    # E[Ts]
+                    batch_response_times_monitor.append(np.mean(response_times_monitor[k_mon:k_mon+batch_size]))
+
+                    # E[Tq]
+                    batch_waiting_times_monitor.append(np.mean(waiting_times_monitor[k_mon:k_mon+batch_size]))
+
+                    # ρ
+                    if last['monitoring'][0] > START:
+                        batch_rho1_monitor.append(np.sum(monitoring_centre.service[0][k_mon:k_mon+batch_size]) / (last['monitoring'][0] - first['monitoring'][3]))
+                    if last['monitoring'][1] > START:
+                        batch_rho2_monitor.append(np.sum(monitoring_centre.service[1][k_mon:k_mon+batch_size]) / (last['monitoring'][1] - first['monitoring'][4]))
+                    if last['monitoring'][2] > START:
+                        batch_rho3_monitor.append(np.sum(monitoring_centre.service[2][k_mon:k_mon+batch_size]) / (last['monitoring'][2] - first['monitoring'][4]))
+
+                    k_mon += batch_size
 
         # --------------------------------------------------------------------------------------------------------------
         # *                                          Analyze&Plan Area Events
@@ -161,8 +189,9 @@ def simulation(stop) -> list:
                 events[e+1].x = ON
                 waiting_times_plan.append(0.0)                                   # update integrals                   */
                 response_times_plan.append(served - t.current)
-                planning_centre.service += service                               # update integrals                   */
+                planning_centre.service.append(service)                          # update integrals                   */
             else:
+                # save the timestamp of the arrival as token for the job                                              */
                 planning_centre.queue.append(t.current)                          # plus one job in the queue          */
 
         if e == MONITORING_SERVERS*2+1:
@@ -176,20 +205,42 @@ def simulation(stop) -> list:
                 waiting_times_plan.append(t.current - arrived)                   # update integrals                   */
                 service = planning_centre.get_service(e)
                 served = t.current + service
-                events[e].t = served
+                events[e].t = served                                             # schedule next departure            */
                 response_times_plan.append(served - arrived)
-                planning_centre.service += service                               # update integrals                   */
-
+                planning_centre.service.append(service)                          # update integrals                   */
             else:
                 events[e].x = OFF
 
             last['planning'] = t.current
 
-    rho_mon_1 = monitoring_centre.service[0] / (last['monitoring'][0] - first['monitoring'][3])
-    rho_mon_2 = monitoring_centre.service[1] / (last['monitoring'][1] - first['monitoring'][4])
-    rho_mon_3 = monitoring_centre.service[2] / (last['monitoring'][2] - first['monitoring'][5])
+            # FOR INFINITE-HORIZON SIMULATION
+            if batch_size > 1:
+                if planning_centre.departed % batch_size == 0:
+                    # Time to save up some metrics
 
-    # planning_centre.departed == departed_jobs
-    rho_pla = planning_centre.service / (last['planning'] - first['planning'][1])
+                    # E[Ts]
+                    batch_response_times_plan.append(np.mean(response_times_plan[k_pla:k_pla+batch_size]))
 
-    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla]
+                    # E[Tq]
+                    batch_waiting_times_plan.append(np.mean(waiting_times_plan[k_pla:k_pla+batch_size]))
+
+                    # ρ
+                    if last['planning'] > START:
+                        batch_rho_plan.append(np.sum(planning_centre.service[k_pla:k_pla+batch_size]) / (last['planning'] - first['planning'][1]))
+
+                    k_pla += batch_size
+
+    rho_mon_1 = np.sum(monitoring_centre.service[0]) / (last['monitoring'][0] - first['monitoring'][3])
+    rho_mon_2 = np.sum(monitoring_centre.service[1]) / (last['monitoring'][1] - first['monitoring'][4])
+    rho_mon_3 = np.sum(monitoring_centre.service[2]) / (last['monitoring'][2] - first['monitoring'][5])
+
+    rho_pla = np.sum(planning_centre.service) / (last['planning'] - first['planning'][1])
+
+    batch_stats = {
+        "monitor_response_times": batch_response_times_monitor,
+        "monitor_waiting_times": batch_waiting_times_monitor,
+        "plan_response_times": batch_response_times_plan,
+        "plan_waiting_times": batch_waiting_times_plan,
+    }
+
+    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla, batch_stats]

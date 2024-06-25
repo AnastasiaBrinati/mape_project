@@ -46,11 +46,10 @@
 # * -------------------------------------------------------------------------
 
 from math import exp, log, fabs, sqrt
-#from rvgs import
 
 
-TINY= 1.0e-10
-SQRT2PI= 2.506628274631              # #/* sqrt(2 * pi) */
+TINY = 1.0e-10
+SQRT2PI = 2.506628274631              # #/* sqrt(2 * pi) */
 
 # static double pdfStandard(x)
 # static double cdfStandard(x)

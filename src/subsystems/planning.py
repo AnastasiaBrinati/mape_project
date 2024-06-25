@@ -29,12 +29,16 @@ u = rvgs.Uniform(0.0, 1.0 - beta)
 
 
 class PlanningCentre:
-    number = 0.0                # time integrated number in the node    */
+    number = 0                # time integrated number in the node    */
     queue = []                  # time integrated number in the queue   */
-    service = 0.0               # time integrated number in service     */
+    service = []               # time integrated number in service     */
     departed = 0                # number served                         */
 
     def __init__(self) -> None:
+        self.service = []
+        self.queue = []
+        self.departed = 0
+        self.number = 0
         pass
 
     def get_events(self) -> list:
@@ -73,5 +77,5 @@ class PlanningCentre:
         # */
         rngs.selectStream(stream)
         # TO VERIFY:
-        # return rvgs.Exponential(mu)
+        #return rvgs.Exponential(mu)
         return rvms.idfLognormal(a, b, u)
