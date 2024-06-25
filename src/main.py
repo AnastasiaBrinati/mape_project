@@ -3,6 +3,8 @@ import subsystems.system as system
 import subsystems.libs as libs
 import numpy as np
 import csv
+import os
+import matplotlib.pyplot as plt
 import subsystems.util as util
 
 RESPONSE_TIME_MONITOR = []
@@ -47,12 +49,40 @@ def write_on_csv(input_list):
             writer.writerow([element])
 
 
+def cumulative_mean(data):
+    # Computes the cumulative mean for an array of data
+    return np.cumsum(data) / np.arange(1, len(data) + 1)
+
+
+def plot_cumulative_means(cumulative_means, stationary_value, ylabel, title, filename):
+    plt.figure(figsize=(10, 6))
+    plt.plot(cumulative_means, label=ylabel)
+    plt.xlabel('Batch Number')
+
+    # Plot a horizontal line for the stationary value
+    plt.axhline(stationary_value, color='orange', label='Stationary value')
+
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    plt.grid(True)
+
+    # Create folder 'plots' if it doesn't exist
+    if not os.path.exists('plots'):
+        os.makedirs('plots')
+
+    # Save plots
+    plt.savefig(f'plots/{filename}.png')
+    plt.close()
+
+
 def finite(seed, n, stop):
     libs.rngs.plantSeeds(seed)
     for i in range(n):
         try:
             res = system.simulation(stop)
-            response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan = res[0], res[1], res[2], res[3]
+            response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan = res[0], res[1], \
+            res[2], res[3]
             rho_1_man, rho_2_man, rho_3_man, rho_plan = res[4], res[5], res[6], res[7]
 
             response_times_monitor_avg = np.mean(response_times_monitor)
@@ -77,7 +107,8 @@ def infinite(seed, stop, batch_size=1.0):
     libs.rngs.plantSeeds(seed)
     try:
         res = system.simulation(stop, batch_size)
-        response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan = res[0], res[1], res[2], res[3]
+        response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan = res[0], res[1], res[2], \
+        res[3]
         batch_stats = res[8]
 
         RESPONSE_TIME_MONITOR.extend(batch_stats["monitor_response_times"])
@@ -165,6 +196,31 @@ if __name__ == "__main__":
         print("Plan Centre")
         print(f"E[Tq] = {waiting_time_plan_mean} +/- {waiting_time_plan_interval}")
         print(f"E[Ts] = {response_time_plan_mean} +/- {response_time_plan_interval}")
+
+        # Compute cumulative means
+        cumulative_response_time_monitor = cumulative_mean(RESPONSE_TIME_MONITOR)
+        cumulative_waiting_time_monitor = cumulative_mean(WAITING_TIME_MONITOR)
+        cumulative_response_time_plan = cumulative_mean(RESPONSE_TIME_PLAN)
+        cumulative_waiting_time_plan = cumulative_mean(WAITING_TIME_PLAN)
+
+        # Plot cumulative means for Monitor area
+        plot_cumulative_means(cumulative_response_time_monitor, response_time_monitor_mean,
+                              'Cumulative Mean Response Time (Monitor)',
+                              'Cumulative Mean Response Time over Batches (Monitor Centre)',
+                              'cumulative_response_time_monitor')
+        plot_cumulative_means(cumulative_waiting_time_monitor, waiting_time_monitor_mean,
+                              'Cumulative Mean Waiting Time (Monitor)',
+                              'Cumulative Mean Waiting Time over Batches (Monitor Centre)',
+                              'cumulative_waiting_time_monitor')
+
+        # Plot cumulative means for Plan area
+        plot_cumulative_means(cumulative_response_time_plan, response_time_plan_mean,
+                              'Cumulative Mean Response Time (Plan)',
+                              'Cumulative Mean Response Time over Batches (Plan Centre)',
+                              'cumulative_response_time_plan')
+        plot_cumulative_means(cumulative_waiting_time_plan, waiting_time_plan_mean,
+                              'Cumulative Mean Waiting Time (Plan)',
+                              'Cumulative Mean Waiting Time over Batches (Plan Centre)', 'cumulative_waiting_time_plan')
 
     else:
         print("Usage: python main.py <number_of_times> [finite | infinite]")
