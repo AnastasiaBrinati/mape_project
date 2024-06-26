@@ -17,13 +17,17 @@ def simulation(stop, batch_size=1.0) -> list:
     # statistics                                                                                                      */
     waiting_times_monitor = []
     response_times_monitor = []
+    response_times_monitor_1 = []
 
     waiting_times_plan = []
     response_times_plan = []
 
     k_mon = 0
+    k_mon_1 = 0
+    departed_mon_1 = 0
     batch_response_times_monitor = []
     batch_waiting_times_monitor = []
+    batch_response_times_monitor_1 = []
     batch_rho1_monitor = []
     batch_rho2_monitor = []
     batch_rho3_monitor = []
@@ -124,6 +128,9 @@ def simulation(stop, batch_size=1.0) -> list:
                 events[e+MONITORING_SERVERS].x = ON                              # schedule departure                 */
                 waiting_times_monitor.append(0.0)                                # update integrals for E[Tq]         */
                 response_times_monitor.append(served - arrived)                  # update integrals for E[Ts]         */
+                if e == 0:
+                    departed_mon_1 += 1
+                    response_times_monitor_1.append(served - arrived)
             else:
                 # save the timestamp of the arrival as token for the job                                              */
                 monitoring_centre.queue[e].append(t.current)                     # plus one job in one of the queues  */
@@ -140,6 +147,9 @@ def simulation(stop, batch_size=1.0) -> list:
                 events[e].t = served                                             # prepares next departure            */
                 waiting_times_monitor.append(t.current - arrived)                # update integrals for E[Tq]         */
                 response_times_monitor.append(served - arrived)                  # update integrals for E[Tq]         */
+                if e == MONITORING_SERVERS:
+                    departed_mon_1 += 1
+                    response_times_monitor_1.append(served - arrived)
             else:
                 events[e].x = OFF
 
@@ -168,6 +178,12 @@ def simulation(stop, batch_size=1.0) -> list:
                         batch_rho3_monitor.append(np.sum(monitoring_centre.service[2][k_mon:k_mon+batch_size]) / (last['monitoring'][2] - first['monitoring'][4]))
 
                     k_mon += batch_size
+
+                if departed_mon_1 > 0 and departed_mon_1 % batch_size == 0:
+                    # E[Ts1]
+                    batch_response_times_monitor_1.append(np.mean(response_times_monitor_1[k_mon_1:k_mon_1+batch_size]))
+                    k_mon_1 += batch_size
+                    departed_mon_1 = 0
 
         # --------------------------------------------------------------------------------------------------------------
         # *                                          Analyze&Plan Area Events
@@ -237,6 +253,7 @@ def simulation(stop, batch_size=1.0) -> list:
 
     batch_stats = {
         "monitor_response_times": batch_response_times_monitor,
+        "response_times_monitor_1": batch_response_times_monitor_1,
         "monitor_waiting_times": batch_waiting_times_monitor,
         "plan_response_times": batch_response_times_plan,
         "plan_waiting_times": batch_waiting_times_plan,
@@ -247,4 +264,5 @@ def simulation(stop, batch_size=1.0) -> list:
         "rho_plan": batch_rho_plan,
     }
 
-    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla, batch_stats]
+
+    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla, batch_stats, response_times_monitor_1]

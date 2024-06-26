@@ -41,11 +41,11 @@ u = rvgs.Uniform(0.0, 1.0 - beta)
 
 
 class MonitoringCentre:
-    number = []                 # time integrated number in the node    */
-    queue = []                  # time integrated number in the queues  */
-    service = []                # time integrated number in service     */
-    departed = []               # number served                         */
-    servers = 0                 # number of servers                     */
+    number = []                 # time integrated numbers in the node  */
+    queue = []                  # in the queues  */
+    service = []                # in service     */
+    departed = []               # number served                        */
+    servers = 0                 # number of servers                    */
 
     def __init__(self, servers) -> None:
         self.servers = servers
@@ -108,6 +108,6 @@ class MonitoringCentre:
         # * --------------------------------------------
         # */
         rngs.selectStream(stream)
+        #return rvms.idfLognormal(a, b, u)
         # TO VERIFY:
-        #return rvgs.Exponential(MU)
-        return rvms.idfLognormal(a, b, u)
+        return rvgs.Exponential(MU)

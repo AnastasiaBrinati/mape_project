@@ -32,7 +32,9 @@
 import sys
 from math import sqrt
 
-K = 16                             # K is the maximum lag */
+# modello base: k = 16
+# modello migliorativo
+K = 32                             # K is the maximum lag */
 SIZE = (K + 1)
 
 
