@@ -233,7 +233,6 @@ def simulation(stop, batch_size=1.0) -> list:
     rho_mon_1 = np.sum(monitoring_centre.service[0]) / (last['monitoring'][0] - first['monitoring'][3])
     rho_mon_2 = np.sum(monitoring_centre.service[1]) / (last['monitoring'][1] - first['monitoring'][4])
     rho_mon_3 = np.sum(monitoring_centre.service[2]) / (last['monitoring'][2] - first['monitoring'][5])
-
     rho_pla = np.sum(planning_centre.service) / (last['planning'] - first['planning'][1])
 
     batch_stats = {
@@ -241,6 +240,11 @@ def simulation(stop, batch_size=1.0) -> list:
         "monitor_waiting_times": batch_waiting_times_monitor,
         "plan_response_times": batch_response_times_plan,
         "plan_waiting_times": batch_waiting_times_plan,
+
+        "rho1_mon": batch_rho1_monitor,
+        "rho2_mon": batch_rho2_monitor,
+        "rho3_mon": batch_rho3_monitor,
+        "rho_plan": batch_rho_plan,
     }
 
     return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla, batch_stats]

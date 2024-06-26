@@ -29,8 +29,12 @@ def simulation(stop, batch_size=1.0) -> list:
     batch_rho3_monitor = []
 
     k_pla = 0
+    k_pla_queue1 = 0
+    k_pla_queue2 = 0
+    departed_queue1 = 0
+    departed_queue2 = 0
     batch_response_times_plan = []
-    batch_waiting_times_plan = []
+    batch_waiting_times_plan = [[],[]]
     batch_rho_plan = []
 
     # ***************************************************** Monitoring area ********************************************
@@ -144,10 +148,10 @@ def simulation(stop, batch_size=1.0) -> list:
                 events[e].x = OFF
 
             if e == MONITORING_SERVERS:
-                events[MONITORING_SERVERS*2].x = ON                                  # signal an arrival to the first A&P queue  */
+                events[MONITORING_SERVERS*2].x = ON                              # signal an arrival to A&P first q   */
                 events[MONITORING_SERVERS*2].t = t.current
             else:
-                events[MONITORING_SERVERS*2+1].x = ON                                  # signal an arrival to the first A&P queue  */
+                events[MONITORING_SERVERS*2+1].x = ON                            # signal an arrival to A&P second q  */
                 events[MONITORING_SERVERS*2+1].t = t.current
 
             last['monitoring'][e-MONITORING_SERVERS] = t.current
@@ -178,32 +182,47 @@ def simulation(stop, batch_size=1.0) -> list:
         # * ------------------------------------------------------------------------------------------------------------
         # */
 
-        if e == MONITORING_SERVERS*2 or e == MONITORING_SERVERS*2+1:             # process an arrival to A&P centre   */
+        if e == MONITORING_SERVERS*2:                                            # process an arrival to An&PlaC      */
             planning_centre.number += 1                                          # plus one job in the area           */
-            events[e].x = OFF                                                    # turn off the arrival               */
 
             if first['planning'][0] == 0:
                 first['planning'][1] = t.current
                 first['planning'][0] = 1
 
+            events[e].x = OFF                                                    # turn off the arrival               */
+            if planning_centre.number == 1:                                      # prepares next departure            */
+                service = planning_centre.get_service(e+2)
+                served = t.current + service
+                events[e+2].t = served
+                events[e+2].x = ON
+                waiting_times_plan[0].append(0.0)                                # update integrals                   */
+                departed_queue1 += 1
+                response_times_plan.append(served - t.current)
+                planning_centre.service.append(service)                          # update integrals                   */
+            else:
+                # save the timestamp of the arrival as token for the job                                              */
+                planning_centre.queue[0].append(t.current)                       # plus one job in the queue          */
+
+        if e == MONITORING_SERVERS*2+1:                                          # process an arrival to An&PlaC      */
+            planning_centre.number += 1                                          # plus one job in the area           */
+
+            if first['planning'][0] == 0:
+                first['planning'][1] = t.current
+                first['planning'][0] = 1
+
+            events[e].x = OFF                                                    # turn off the arrival               */
             if planning_centre.number == 1:                                      # prepares next departure            */
                 service = planning_centre.get_service(e+1)
                 served = t.current + service
                 events[e+1].t = served
                 events[e+1].x = ON
-                if e == MONITORING_SERVERS*2:
-                    waiting_times_plan[0].append(0.0)
-                else:
-                    waiting_times_plan[1].append(0.0)
+                waiting_times_plan[1].append(0.0)                                # update integrals                   */
+                departed_queue2 += 1
                 response_times_plan.append(served - t.current)
                 planning_centre.service.append(service)                          # update integrals                   */
             else:
-                if e == MONITORING_SERVERS*2:
-                    # save the timestamp of the arrival to queue 1 as token for the job                               */
-                    planning_centre.queue[0].append(t.current)                   # plus one job in the queue          */
-                else:
-                    # save the timestamp of the arrival to queue 2 as token for the job                               */
-                    planning_centre.queue[1].append(t.current)                   # plus one job in the queue          */
+                # save the timestamp of the arrival as token for the job                                              */
+                planning_centre.queue[1].append(t.current)                       # plus one job in the queue          */
 
         if e == MONITORING_SERVERS*2+2:
             planning_centre.number -= 1                                          # minus one job in the area          */
@@ -211,9 +230,10 @@ def simulation(stop, batch_size=1.0) -> list:
             number -= 1                                                          # minus one job in the system        */
             departed_jobs += 1                                                   # plus one departed job from system  */
 
-            if len(planning_centre.queue[0]) > 0:                                # if there is someone in the first q */
-                arrived = planning_centre.queue[0].pop(0)                        # prepares next departure            */
+            if len(planning_centre.queue[0]) > 0:                                # prepares next departure            */
+                arrived = planning_centre.queue[0].pop(0)
                 waiting_times_plan[0].append(t.current - arrived)                # update integrals                   */
+                departed_queue1 += 1
                 service = planning_centre.get_service(e)
                 served = t.current + service
                 events[e].t = served                                             # schedule next departure            */
@@ -221,8 +241,9 @@ def simulation(stop, batch_size=1.0) -> list:
                 planning_centre.service.append(service)                          # update integrals                   */
             else:
                 if len(planning_centre.queue[1]) > 0:
-                    arrived = planning_centre.queue[1].pop(0)                    # prepares next departure            */
+                    arrived = planning_centre.queue[1].pop(0)
                     waiting_times_plan[1].append(t.current - arrived)            # update integrals                   */
+                    departed_queue2 += 1
                     service = planning_centre.get_service(e)
                     served = t.current + service
                     events[e].t = served                                         # schedule next departure            */
@@ -241,26 +262,39 @@ def simulation(stop, batch_size=1.0) -> list:
                     # E[Ts]
                     batch_response_times_plan.append(np.mean(response_times_plan[k_pla:k_pla+batch_size]))
 
-                    # E[Tq]
-                    batch_waiting_times_plan.append(np.mean(waiting_times_plan[k_pla:k_pla+batch_size]))
-
                     # ρ
                     if last['planning'] > START:
                         batch_rho_plan.append(np.sum(planning_centre.service[k_pla:k_pla+batch_size]) / (last['planning'] - first['planning'][1]))
 
                     k_pla += batch_size
 
+                if departed_queue1 > 0 and  departed_queue1 % batch_size == 0:
+                    # E[Tq1]
+                    batch_waiting_times_plan[0].append(np.mean(waiting_times_plan[0][k_pla_queue1:k_pla_queue1+batch_size]))
+                    k_pla_queue1 += batch_size
+                    departed_queue1 = 0
+                if departed_queue2 > 0 and  departed_queue2 % batch_size == 0:
+                    # E[Tq2]
+                    batch_waiting_times_plan[1].append(np.mean(waiting_times_plan[1][k_pla_queue2:k_pla_queue2+batch_size]))
+                    k_pla_queue2 += batch_size
+                    departed_queue2 = 0
+
     rho_mon_1 = np.sum(monitoring_centre.service[0]) / (last['monitoring'][0] - first['monitoring'][3])
     rho_mon_2 = np.sum(monitoring_centre.service[1]) / (last['monitoring'][1] - first['monitoring'][4])
     rho_mon_3 = np.sum(monitoring_centre.service[2]) / (last['monitoring'][2] - first['monitoring'][5])
-
     rho_pla = np.sum(planning_centre.service) / (last['planning'] - first['planning'][1])
 
     batch_stats = {
         "monitor_response_times": batch_response_times_monitor,
         "monitor_waiting_times": batch_waiting_times_monitor,
         "plan_response_times": batch_response_times_plan,
-        "plan_waiting_times": batch_waiting_times_plan,
+        "plan_waiting_times_queue1": batch_waiting_times_plan[0],
+        "plan_waiting_times_queue2": batch_waiting_times_plan[1],
+
+        "rho1_mon": batch_rho1_monitor,
+        "rho2_mon": batch_rho2_monitor,
+        "rho3_mon": batch_rho3_monitor,
+        "rho_plan": batch_rho_plan,
     }
 
-    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan, rho_mon_1, rho_mon_2, rho_mon_3, rho_pla, batch_stats]
+    return [response_times_monitor, waiting_times_monitor, response_times_plan, waiting_times_plan[0]+waiting_times_plan[1], rho_mon_1, rho_mon_2, rho_mon_3, rho_pla, batch_stats, waiting_times_plan[0], waiting_times_plan[1]]

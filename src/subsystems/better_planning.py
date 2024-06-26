@@ -44,17 +44,19 @@ class PlanningCentre:
     def get_events(self) -> list:
 
         planning_events = []
-        # one arrival for each queue and one departure from the node               */
-        arrival_1 = event.Event()  # arrival at queue 1                                     */
-        arrival_1.t = START
-        arrival_1.x = OFF
-        planning_events.append(arrival_1)
+        # one arrival to first queue              */
+        arrival1 = event.Event()  # arrival                                     */
+        arrival1.t = START
+        arrival1.x = OFF
+        planning_events.append(arrival1)
 
-        arrival_2 = event.Event()  # arrival at queue 2                                     */
-        arrival_2.t = START
-        arrival_2.x = OFF
-        planning_events.append(arrival_2)
+        # one arrival to second queue              */
+        arrival2 = event.Event()  # arrival                                     */
+        arrival2.t = START
+        arrival2.x = OFF
+        planning_events.append(arrival2)
 
+        # departure from node
         departure = event.Event()  # departure                                   */
         departure.t = START
         departure.x = OFF

@@ -1,5 +1,5 @@
 import sys
-import subsystems.system as system
+import subsystems.better_system as system
 import subsystems.libs as libs
 import numpy as np
 import csv
@@ -11,6 +11,8 @@ RESPONSE_TIME_MONITOR = []
 WAITING_TIME_MONITOR = []
 RESPONSE_TIME_PLAN = []
 WAITING_TIME_PLAN = []
+WAITING_TIME_PLAN_QUEUE1 = []
+WAITING_TIME_PLAN_QUEUE2 = []
 
 RHO_MONITOR_1 = []
 RHO_MONITOR_2 = []
@@ -90,6 +92,14 @@ def finite(seed, n, stop):
             response_times_plan_avg = np.mean(response_times_plan)
             waiting_times_plan_avg = np.mean(waiting_times_plan)
 
+            # ONLY TO VERIFY BETTER SYSTEM
+            waiting_times_plan_queue1 = res[9]
+            waiting_times_plan_queue2 = res[10]
+            waiting_times_queue1_plan_avg = np.mean(waiting_times_plan_queue1)
+            waiting_times_queue2_plan_avg = np.mean(waiting_times_plan_queue2)
+            WAITING_TIME_PLAN_QUEUE1.append(waiting_times_queue1_plan_avg)
+            WAITING_TIME_PLAN_QUEUE2.append(waiting_times_queue2_plan_avg)
+
             RESPONSE_TIME_MONITOR.append(response_times_monitor_avg)
             WAITING_TIME_MONITOR.append(waiting_times_monitor_avg)
             RESPONSE_TIME_PLAN.append(response_times_plan_avg)
@@ -114,7 +124,8 @@ def infinite(seed, stop, batch_size=1.0):
         RESPONSE_TIME_MONITOR.extend(batch_stats["monitor_response_times"])
         WAITING_TIME_MONITOR.extend(batch_stats["monitor_waiting_times"])
         RESPONSE_TIME_PLAN.extend(batch_stats["plan_response_times"])
-        WAITING_TIME_PLAN.extend(batch_stats["plan_waiting_times"])
+        WAITING_TIME_PLAN_QUEUE1.extend(batch_stats["plan_waiting_times_queue1"])
+        WAITING_TIME_PLAN_QUEUE2.extend(batch_stats["plan_waiting_times_queue2"])
 
         write_on_csv(RESPONSE_TIME_MONITOR)
 
@@ -130,13 +141,17 @@ if __name__ == "__main__":
     if sys.argv[2] == "finite":
         try:
             n = int(sys.argv[1])
-            stop = 2000.0
+            stop = 20000.0
             finite(SEED, n, stop)
 
             response_time_monitor_interval = confidence_interval(ALPHA, n, RESPONSE_TIME_MONITOR)
             waiting_time_monitor_interval = confidence_interval(ALPHA, n, WAITING_TIME_MONITOR)
             response_time_plan_interval = confidence_interval(ALPHA, n, RESPONSE_TIME_PLAN)
             waiting_time_plan_interval = confidence_interval(ALPHA, n, WAITING_TIME_PLAN)
+
+            # ONLY TO VERIFY BETTER SYSTEM
+            waiting_time_queue1_plan_interval = confidence_interval(ALPHA, n, WAITING_TIME_PLAN_QUEUE1)
+            waiting_time_queue2_plan_interval = confidence_interval(ALPHA, n, WAITING_TIME_PLAN_QUEUE2)
 
             rho_man1_interval = confidence_interval(ALPHA, n, RHO_MONITOR_1)
             rho_man2_interval = confidence_interval(ALPHA, n, RHO_MONITOR_2)
@@ -154,6 +169,11 @@ if __name__ == "__main__":
             print(f"E[Tq] = {np.mean(WAITING_TIME_PLAN)} +/- {waiting_time_plan_interval}")
             print(f"E[Ts] = {np.mean(RESPONSE_TIME_PLAN)} +/- {response_time_plan_interval}")
             print(f"rho = {np.mean(RHO_PLAN)} +/- {rho_pla_interval}")
+
+            # ONLY TO VERIFY BETTER SYSTEM
+            print(f"E[Tq1] = {np.mean(WAITING_TIME_PLAN_QUEUE1)} +/- {waiting_time_queue1_plan_interval}")
+            print(f"E[Tq2] = {np.mean(WAITING_TIME_PLAN_QUEUE2)} +/- {waiting_time_queue2_plan_interval}")
+
 
         except ValueError:
             print("The argument must be an integer.")
@@ -175,8 +195,10 @@ if __name__ == "__main__":
         response_time_plan_mean = np.mean(RESPONSE_TIME_PLAN)
         response_time_plan_interval = confidence_interval(ALPHA, len(RESPONSE_TIME_PLAN), RESPONSE_TIME_PLAN)
 
-        waiting_time_plan_mean = np.mean(WAITING_TIME_PLAN)
-        waiting_time_plan_interval = confidence_interval(ALPHA, len(WAITING_TIME_PLAN), WAITING_TIME_PLAN)
+        waiting_time_plan_queue1_mean = np.mean(WAITING_TIME_PLAN_QUEUE1)
+        waiting_time_plan_queue1_interval = confidence_interval(ALPHA, len(WAITING_TIME_PLAN_QUEUE1), WAITING_TIME_PLAN_QUEUE1)
+        waiting_time_plan_queue2_mean = np.mean(WAITING_TIME_PLAN_QUEUE2)
+        waiting_time_plan_queue2_interval = confidence_interval(ALPHA, len(WAITING_TIME_PLAN_QUEUE2), WAITING_TIME_PLAN_QUEUE2)
 
         '''
         rho_man1_mean = np.mean(RHO_MONITOR_1)
@@ -194,14 +216,16 @@ if __name__ == "__main__":
         print(f"E[Ts] = {response_time_monitor_mean} +/- {response_time_monitor_interval}")
 
         print("Plan Centre")
-        print(f"E[Tq] = {waiting_time_plan_mean} +/- {waiting_time_plan_interval}")
+        print(f"E[Tq1] = {waiting_time_plan_queue1_mean} +/- {waiting_time_plan_queue1_interval}")
+        print(f"E[Tq2] = {waiting_time_plan_queue2_mean} +/- {waiting_time_plan_queue2_interval}")
         print(f"E[Ts] = {response_time_plan_mean} +/- {response_time_plan_interval}")
 
         # Compute cumulative means
         cumulative_response_time_monitor = cumulative_mean(RESPONSE_TIME_MONITOR)
         cumulative_waiting_time_monitor = cumulative_mean(WAITING_TIME_MONITOR)
         cumulative_response_time_plan = cumulative_mean(RESPONSE_TIME_PLAN)
-        cumulative_waiting_time_plan = cumulative_mean(WAITING_TIME_PLAN)
+        cumulative_waiting_time_queue1_plan = cumulative_mean(WAITING_TIME_PLAN_QUEUE1)
+        cumulative_waiting_time_queue2_plan = cumulative_mean(WAITING_TIME_PLAN_QUEUE2)
 
         # Plot cumulative means for Monitor area
         plot_cumulative_means(cumulative_response_time_monitor, response_time_monitor_mean,
@@ -218,9 +242,12 @@ if __name__ == "__main__":
                               'Cumulative Mean Response Time (Plan)',
                               'Cumulative Mean Response Time over Batches (Plan Centre)',
                               'cumulative_response_time_plan')
-        plot_cumulative_means(cumulative_waiting_time_plan, waiting_time_plan_mean,
-                              'Cumulative Mean Waiting Time (Plan)',
-                              'Cumulative Mean Waiting Time over Batches (Plan Centre)', 'cumulative_waiting_time_plan')
+        plot_cumulative_means(cumulative_waiting_time_queue1_plan, waiting_time_plan_queue1_mean,
+                              'Cumulative Mean Waiting Time Queue1 (Plan)',
+                              'Cumulative Mean Waiting Time Queue1 over Batches (Plan Centre)', 'cumulative_waiting_time_queue1_plan')
+        plot_cumulative_means(cumulative_waiting_time_queue2_plan, waiting_time_plan_queue2_mean,
+                              'Cumulative Mean Waiting Time Queue2 (Plan)',
+                              'Cumulative Mean Waiting Time Queue2 over Batches (Plan Centre)', 'cumulative_waiting_time_queue2_plan')
 
     else:
         print("Usage: python main.py <number_of_times> [finite | infinite]")
