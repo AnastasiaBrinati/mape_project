@@ -5,6 +5,7 @@ import numpy as np
 import csv
 import os
 import matplotlib.pyplot as plt
+from plots import plots
 
 RESPONSE_TIME_MONITOR1 = []
 RESPONSE_TIME_MONITOR = []
@@ -213,6 +214,18 @@ if __name__ == "__main__":
         cumulative_waiting_time_monitor = cumulative_mean(WAITING_TIME_MONITOR)
         cumulative_response_time_plan = cumulative_mean(RESPONSE_TIME_PLAN)
         cumulative_waiting_time_plan = cumulative_mean(WAITING_TIME_PLAN)
+
+        # Plot for QoS1
+        values = (np.array(cumulative_response_time_monitor) + np.array(cumulative_response_time_plan)).tolist()
+        plots.plot_qos1_base(values)
+
+        # Plot for QoS2
+        min_length = min(len(cumulative_response_time1_monitor), len(cumulative_response_time_plan))
+        array1 = np.array(cumulative_response_time1_monitor[:min_length])
+        array2 = np.array(cumulative_response_time_plan[:min_length])
+        values = (np.array(array1) + np.array(array2)).tolist()
+        plots.plot_qos2_base(values)
+
 
         # Plot cumulative means for Monitor area
         plot_cumulative_means(cumulative_response_time_monitor, response_time_monitor_mean,

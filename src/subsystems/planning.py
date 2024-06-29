@@ -76,6 +76,6 @@ class PlanningCentre:
         # * --------------------------------------------
         # */
         rngs.selectStream(stream)
-        #return rvms.idfLognormal(a, b, u)
+        return rvms.idfLognormal(a, b, u)
         # TO VERIFY:
-        return rvgs.Exponential(mu)
+        #return rvgs.Exponential(mu)

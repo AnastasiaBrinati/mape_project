@@ -5,6 +5,7 @@ import numpy as np
 import csv
 import os
 import matplotlib.pyplot as plt
+from plots import plots
 
 RESPONSE_TIME_MONITOR1 = []
 RESPONSE_TIME_MONITOR = []
@@ -58,7 +59,7 @@ def cumulative_mean(data):
 
 
 def plot_cumulative_means(cumulative_means, stationary_value, ylabel, title, filename):
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(9, 5))
     plt.plot(cumulative_means, label=ylabel)
     plt.xlabel('Batch Number')
 
@@ -188,7 +189,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     elif sys.argv[2] == "infinite":
-        stop = 2000000.0
+        stop = 200000.0
         batch_size = 256
         infinite(SEED, stop, batch_size=batch_size)
 
@@ -249,6 +250,16 @@ if __name__ == "__main__":
         cumulative_waiting_time_queue1_plan = cumulative_mean(WAITING_TIME_PLAN_QUEUE1)
         cumulative_waiting_time_queue2_plan = cumulative_mean(WAITING_TIME_PLAN_QUEUE2)
 
+        # Plot for QoS1
+        values = (np.array(cumulative_response_time_monitor) + np.array(cumulative_response_time_plan)).tolist()
+        plots.plot_qos1_better(values)
+
+        # Plot for QoS2
+        min_length = min(len(cumulative_response_time1_monitor), len(cumulative_response_time1_plan))
+        array1 = np.array(cumulative_response_time1_monitor[:min_length])
+        array2 = np.array(cumulative_response_time1_plan[:min_length])
+        values = (np.array(array1) + np.array(array2)).tolist()
+        plots.plot_qos2_better(values)
 
         cumulative_res_dict = {
             'cumulative_response_time1_monitor': np.array(cumulative_response_time1_monitor),

@@ -108,6 +108,6 @@ class MonitoringCentre:
         # * --------------------------------------------
         # */
         rngs.selectStream(stream)
-        #return rvms.idfLognormal(a, b, u)
+        return rvms.idfLognormal(a, b, u)
         # TO VERIFY:
-        return rvgs.Exponential(MU)
+        #return rvgs.Exponential(MU)
