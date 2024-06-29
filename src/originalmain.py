@@ -61,7 +61,7 @@ def plot_cumulative_means(cumulative_means, stationary_value, ylabel, title, fil
     plt.xlabel('Batch Number')
 
     # Plot a horizontal line for the stationary value
-    plt.axhline(stationary_value, color='orange', label='Stationary value')
+    plt.axhline(stationary_value, color='orange', label='Mean of means')
 
     plt.ylabel(ylabel)
     plt.title(title)
