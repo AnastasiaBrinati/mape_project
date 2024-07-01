@@ -69,7 +69,6 @@ class PlanningCentre:
     #    arrivalTemp += rvgs.Exponential(2.0)                            */
     #    return arrivalTemp                                              */
     # ********************************************************************/
-
     def get_service(self, stream) -> int:
         # ---------------------------------------------
         # * generate the next service time

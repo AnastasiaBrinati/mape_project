@@ -26,6 +26,7 @@ def simulation(stop, batch_size=1.0) -> list:
     k_mon = 0
     k_mon_1 = 0
     departed_mon_1 = 0
+
     batch_response_times_monitor = []
     batch_waiting_times_monitor = []
     batch_response_times_monitor_1 = []
