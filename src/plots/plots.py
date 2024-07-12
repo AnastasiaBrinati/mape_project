@@ -74,4 +74,4 @@ def plot_qos2_better(value_list):
     filename = 'qos2_response_time_1_better'
     label_values = 'Cumulative Mean response time for Web server logs'
     label_qos = 'QoS2: Response time'
-    plot_cumulative_and_qos(qos, cumulative_values, x_label, y_label, title, filename, label_values, label_qos)
+    plot_cumulative_and_qos(np.mean(value_list), cumulative_values, x_label, y_label, title, filename, label_values, label_qos)

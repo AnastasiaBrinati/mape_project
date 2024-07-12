@@ -120,15 +120,20 @@ def infinite(seed, stop, batch_size=1.0):
         RESPONSE_TIME_PLAN.extend(batch_stats["plan_response_times"])
         WAITING_TIME_PLAN.extend(batch_stats["plan_waiting_times"])
 
-        write_on_csv(RESPONSE_TIME_MONITOR)
+        RHO_MONITOR_1.extend(batch_stats["rho1_mon"])
+        RHO_MONITOR_2.extend(batch_stats["rho2_mon"])
+        RHO_MONITOR_3.extend(batch_stats["rho3_mon"])
+        RHO_PLAN.extend(batch_stats["rho_plan"])
+
+        write_on_csv(RESPONSE_TIME_MONITOR1)
 
     except Exception as e:
         print(f"An error occurred during execution: {e}")
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print("Usage: python bettermain.py <number_of_times> [finite | infinite]")
+    if len(sys.argv) < 2:
+        print("Usage: python originalmain.py <number_of_times> [finite | infinite]")
         sys.exit(1)
 
     if sys.argv[2] == "finite":
@@ -166,7 +171,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
     elif sys.argv[2] == "infinite":
-        stop = 20000.0
+        stop = 2000000.0
         batch_size=128
 
         infinite(SEED, stop, batch_size=batch_size)
@@ -188,7 +193,7 @@ if __name__ == "__main__":
         waiting_time_plan_mean = np.mean(WAITING_TIME_PLAN)
         waiting_time_plan_interval = confidence_interval(ALPHA, len(WAITING_TIME_PLAN), WAITING_TIME_PLAN)
 
-        '''
+
         rho_man1_mean = np.mean(RHO_MONITOR_1)
         rho_man1_interval = confidence_interval(ALPHA, len(RHO_MONITOR_1), RHO_MONITOR_1)
         rho_man2_mean = np.mean(RHO_MONITOR_2)
@@ -197,16 +202,20 @@ if __name__ == "__main__":
         rho_man3_interval = confidence_interval(ALPHA, len(RHO_MONITOR_3), RHO_MONITOR_3)
         rho_plan_mean = np.mean(RHO_PLAN)
         rho_plan_interval = confidence_interval(ALPHA, len(RHO_PLAN), RHO_PLAN)
-        '''
+
 
         print("Monitor Centre")
         print(f"E[Tq] = {waiting_time_monitor_mean} +/- {waiting_time_monitor_interval}")
         print(f"E[Ts] = {response_time_monitor_mean} +/- {response_time_monitor_interval}")
         print(f"E[Ts1] = {response_time_monitor1_mean} +/- {response_time_monitor1_interval}")
+        print(f"rho_1 = {rho_man1_mean} +/- {rho_man1_interval}")
+        print(f"rho_2 = {rho_man2_mean} +/- {rho_man2_interval}")
+        print(f"rho_3 = {rho_man3_mean} +/- {rho_man3_interval}")
 
         print("Plan Centre")
         print(f"E[Tq] = {waiting_time_plan_mean} +/- {waiting_time_plan_interval}")
         print(f"E[Ts] = {response_time_plan_mean} +/- {response_time_plan_interval}")
+        print(f"rho = {rho_plan_mean} +/- {rho_plan_interval}")
 
         # Compute cumulative means
         cumulative_response_time_monitor = cumulative_mean(RESPONSE_TIME_MONITOR)
@@ -251,5 +260,5 @@ if __name__ == "__main__":
                               'Cumulative Mean Waiting Time over Batches (Plan Centre)', 'cumulative_waiting_time_plan')
 
     else:
-        print("Usage: python bettermain.py <number_of_times> [finite | infinite]")
+        print("Usage: python originalmain.py <number_of_times> [finite | infinite]")
         sys.exit(1)

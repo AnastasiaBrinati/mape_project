@@ -90,11 +90,13 @@ def finite(seed, n, stop):
             rho_1_man, rho_2_man, rho_3_man, rho_plan = res[4], res[5], res[6], res[7]
 
             response_times_monitor_1 = res[11]
+            response_times_plan_1 = res[12]
 
             response_times_monitor_avg = np.mean(response_times_monitor)
             response_times_monitor_avg_1 = np.mean(response_times_monitor_1)
             waiting_times_monitor_avg = np.mean(waiting_times_monitor)
             response_times_plan_avg = np.mean(response_times_plan)
+            response_times_plan_avg_1 = np.mean(response_times_plan_1)
             waiting_times_plan_avg = np.mean(waiting_times_plan)
 
             # ONLY TO VERIFY BETTER SYSTEM
@@ -109,6 +111,7 @@ def finite(seed, n, stop):
             RESPONSE_TIME_MONITOR1.append(response_times_monitor_avg_1)
             WAITING_TIME_MONITOR.append(waiting_times_monitor_avg)
             RESPONSE_TIME_PLAN.append(response_times_plan_avg)
+            RESPONSE_TIME_PLAN1.append(response_times_plan_avg_1)
             WAITING_TIME_PLAN.append(waiting_times_plan_avg)
 
             RHO_MONITOR_1.append(rho_1_man)
@@ -136,6 +139,11 @@ def infinite(seed, stop, batch_size=1.0):
         WAITING_TIME_PLAN_QUEUE1.extend(batch_stats["plan_waiting_times_queue1"])
         WAITING_TIME_PLAN_QUEUE2.extend(batch_stats["plan_waiting_times_queue2"])
 
+        RHO_MONITOR_1.extend(batch_stats["rho1_mon"])
+        RHO_MONITOR_2.extend(batch_stats["rho2_mon"])
+        RHO_MONITOR_3.extend(batch_stats["rho3_mon"])
+        RHO_PLAN.extend(batch_stats["rho_plan"])
+
         write_on_csv(RESPONSE_TIME_MONITOR)
 
     except Exception as e:
@@ -150,13 +158,14 @@ if __name__ == "__main__":
     if sys.argv[2] == "finite":
         try:
             n = int(sys.argv[1])
-            stop = 20000.0
+            stop = 2000000.0
             finite(SEED, n, stop)
 
             response_time_monitor_interval = confidence_interval(ALPHA, n, RESPONSE_TIME_MONITOR)
             response_time_monitor1_interval = confidence_interval(ALPHA, n, RESPONSE_TIME_MONITOR1)
             waiting_time_monitor_interval = confidence_interval(ALPHA, n, WAITING_TIME_MONITOR)
             response_time_plan_interval = confidence_interval(ALPHA, n, RESPONSE_TIME_PLAN)
+            response_time_plan1_interval = confidence_interval(ALPHA, n, RESPONSE_TIME_PLAN1)
             waiting_time_plan_interval = confidence_interval(ALPHA, n, WAITING_TIME_PLAN)
 
             # ONLY TO VERIFY BETTER SYSTEM
@@ -166,7 +175,7 @@ if __name__ == "__main__":
             rho_man1_interval = confidence_interval(ALPHA, n, RHO_MONITOR_1)
             rho_man2_interval = confidence_interval(ALPHA, n, RHO_MONITOR_2)
             rho_man3_interval = confidence_interval(ALPHA, n, RHO_MONITOR_3)
-            rho_pla_interval = confidence_interval(ALPHA, n, RHO_PLAN)
+            rho_plan_interval = confidence_interval(ALPHA, n, RHO_PLAN)
 
             print("Monitor Centre")
             print(f"E[Tq] = {np.mean(WAITING_TIME_MONITOR)} +/- {waiting_time_monitor_interval}")
@@ -181,7 +190,8 @@ if __name__ == "__main__":
             print(f"E[Tq1] = {np.mean(WAITING_TIME_PLAN_QUEUE1)} +/- {waiting_time_queue1_plan_interval}")
             print(f"E[Tq2] = {np.mean(WAITING_TIME_PLAN_QUEUE2)} +/- {waiting_time_queue2_plan_interval}")
             print(f"E[Ts] = {np.mean(RESPONSE_TIME_PLAN)} +/- {response_time_plan_interval}")
-            print(f"rho = {np.mean(RHO_PLAN)} +/- {rho_pla_interval}")
+            print(f"E[Ts1] = {np.mean(RESPONSE_TIME_PLAN1)} +/- {response_time_plan1_interval}")
+            print(f"rho = {np.mean(RHO_PLAN)} +/- {rho_plan_interval}")
 
 
         except ValueError:
@@ -189,8 +199,8 @@ if __name__ == "__main__":
             sys.exit(1)
 
     elif sys.argv[2] == "infinite":
-        stop = 200000.0
-        batch_size = 256
+        stop = 2000000.0
+        batch_size = 128
         infinite(SEED, stop, batch_size=batch_size)
 
         # response_time_monitor_mean: Provided no points are discarded,                                           */
@@ -218,7 +228,7 @@ if __name__ == "__main__":
         waiting_time_plan_queue2_mean = np.mean(WAITING_TIME_PLAN_QUEUE2)
         waiting_time_plan_queue2_interval = confidence_interval(ALPHA, len(WAITING_TIME_PLAN_QUEUE2), WAITING_TIME_PLAN_QUEUE2)
 
-        '''
+
         rho_man1_mean = np.mean(RHO_MONITOR_1)
         rho_man1_interval = confidence_interval(ALPHA, len(RHO_MONITOR_1), RHO_MONITOR_1)
         rho_man2_mean = np.mean(RHO_MONITOR_2)
@@ -227,12 +237,15 @@ if __name__ == "__main__":
         rho_man3_interval = confidence_interval(ALPHA, len(RHO_MONITOR_3), RHO_MONITOR_3)
         rho_plan_mean = np.mean(RHO_PLAN)
         rho_plan_interval = confidence_interval(ALPHA, len(RHO_PLAN), RHO_PLAN)
-        '''
+
 
         print("Monitor Centre")
         print(f"E[Tq] = {waiting_time_monitor_mean} +/- {waiting_time_monitor_interval}")
         print(f"E[Ts] = {response_time_monitor_mean} +/- {response_time_monitor_interval}")
         print(f"E[Ts1] = {response_time_monitor1_mean} +/- {response_time_monitor1_interval}")
+        print(f"rho1 = {np.mean(RHO_MONITOR_1)} +/- {rho_man1_interval}")
+        print(f"rho2 = {np.mean(RHO_MONITOR_2)} +/- {rho_man2_interval}")
+        print(f"rho3 = {np.mean(RHO_MONITOR_3)} +/- {rho_man3_interval}")
 
         print("Plan Centre")
         #print(f"E[Tq] = {waiting_time_plan_mean} +/- {waiting_time_plan_interval}")
@@ -240,6 +253,7 @@ if __name__ == "__main__":
         print(f"E[Tq2] = {waiting_time_plan_queue2_mean} +/- {waiting_time_plan_queue2_interval}")
         print(f"E[Ts] = {response_time_plan_mean} +/- {response_time_plan_interval}")
         print(f"E[Ts1] = {response_time_plan1_mean} +/- {response_time_plan1_interval}")
+        print(f"rho = {np.mean(RHO_PLAN)} +/- {rho_plan_interval}")
 
         # Compute cumulative means
         cumulative_response_time_monitor = cumulative_mean(RESPONSE_TIME_MONITOR)
